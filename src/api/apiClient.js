@@ -1,8 +1,9 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3500';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3500";
 
-let accessToken = '';
+let accessToken = "";
 
 export const setAccessToken = (token) => {
   accessToken = token;
@@ -16,24 +17,27 @@ const apiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
+  timeout: 10000,
 });
 
 apiClient.interceptors.request.use(
   (config) => {
     if (accessToken) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
+      config.headers["Authorization"] = `Bearer ${accessToken}`;
     }
     return config;
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 let isRefreshing = false;
 let failedQueue = [];
+
+const isAuthEndpoint = (url = "") => /\/auth\/(login|refresh|logout)/.test(url);
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
@@ -57,15 +61,14 @@ apiClient.interceptors.response.use(
       error.response?.status === 401 &&
       !originalRequest._retry &&
       originalRequest.url &&
-      !originalRequest.url.includes('/auth/login') &&
-      !originalRequest.url.includes('/auth/refresh')
+      !isAuthEndpoint(originalRequest.url)
     ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
-            originalRequest.headers['Authorization'] = `Bearer ${token}`;
+            originalRequest.headers["Authorization"] = `Bearer ${token}`;
             return apiClient(originalRequest);
           })
           .catch((err) => {
@@ -79,17 +82,18 @@ apiClient.interceptors.response.use(
       try {
         const response = await axios.get(`${API_BASE_URL}/auth/refresh`, {
           withCredentials: true,
+          timeout: 5000,
         });
-        
+
         const newAccessToken = response.data.accessToken;
         setAccessToken(newAccessToken);
-        
-        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+
+        originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         processQueue(null, newAccessToken);
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        setAccessToken('');
+        setAccessToken("");
         // Return custom rejection to handle logout on auth failure
         return Promise.reject({ ...refreshError, isRefreshFailed: true });
       } finally {
@@ -98,7 +102,7 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

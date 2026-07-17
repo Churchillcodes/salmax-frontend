@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useState } from "react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -12,8 +12,8 @@ import {
   Menu,
   X,
   User,
-  ExternalLink
-} from 'lucide-react';
+  ExternalLink,
+} from "lucide-react";
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
@@ -22,16 +22,16 @@ export default function AdminLayout() {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/');
+    navigate("/");
   };
 
   const menuItems = [
-    { path: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
-    { path: '/admin/products', label: 'Products', icon: ShoppingBag },
-    { path: '/admin/categories', label: 'Categories', icon: FolderOpen },
-    { path: '/admin/orders', label: 'Orders', icon: ClipboardList },
-    { path: '/admin/analytics', label: 'Sales Analytics', icon: BarChart3 },
-    { path: '/admin/leads', label: 'Leads Log', icon: Users2 },
+    { path: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
+    { path: "/admin/products", label: "Products", icon: ShoppingBag },
+    { path: "/admin/categories", label: "Categories", icon: FolderOpen },
+    { path: "/admin/orders", label: "Orders", icon: ClipboardList },
+    { path: "/admin/analytics", label: "Sales Analytics", icon: BarChart3 },
+    { path: "/admin/leads", label: "Leads Log", icon: Users2 },
   ];
 
   return (
@@ -47,13 +47,16 @@ export default function AdminLayout() {
       {/* Sidebar - Desktop & Mobile Drawer */}
       <aside
         className={`fixed top-0 left-0 bottom-0 z-40 w-64 bg-dark-charcoal border-r border-gold/10 flex flex-col justify-between py-6 px-4 transition-transform duration-300 md:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+          isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="space-y-8">
           {/* Logo */}
           <div className="flex flex-col items-center border-b border-gold/10 pb-6">
-            <Link to="/" className="text-center group flex flex-col items-center">
+            <Link
+              to="/"
+              className="text-center group flex flex-col items-center"
+            >
               <span className="font-serif text-2xl font-bold tracking-widest text-gold group-hover:text-gold-light transition duration-300">
                 SALMAX
               </span>
@@ -75,8 +78,8 @@ export default function AdminLayout() {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-4 py-3 rounded-lg text-sm tracking-wider uppercase transition-all duration-300 ${
                       isActive
-                        ? 'bg-gold text-dark-base font-semibold shadow-md'
-                        : 'text-warm-ivory/70 hover:bg-gold/5 hover:text-gold'
+                        ? "bg-gold text-dark-base font-semibold shadow-md"
+                        : "text-warm-ivory/70 hover:bg-gold/5 hover:text-gold"
                     }`
                   }
                 >
@@ -97,7 +100,7 @@ export default function AdminLayout() {
             </div>
             <div className="overflow-hidden">
               <p className="text-xs font-semibold truncate text-white">
-                {user?.name || user?.username || 'Administrator'}
+                {user?.name || user?.username || "Administrator"}
               </p>
               <p className="text-[10px] text-warm-ivory/40 uppercase tracking-widest">
                 Logged In
@@ -105,15 +108,13 @@ export default function AdminLayout() {
             </div>
           </div>
 
-          <a
-            href="/"
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            to="/"
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider text-warm-ivory/50 hover:text-gold transition duration-300"
           >
             <ExternalLink size={14} />
             Visit Storefront
-          </a>
+          </Link>
 
           <button
             onClick={handleLogout}
@@ -129,7 +130,9 @@ export default function AdminLayout() {
       <main className="flex-1 md:pl-64 min-h-screen flex flex-col">
         {/* Header bar */}
         <header className="bg-dark-charcoal/40 border-b border-gold/5 px-6 py-4 flex justify-between items-center hidden md:flex">
-          <h2 className="font-serif text-xl font-medium tracking-wide text-gold">Control Panel</h2>
+          <h2 className="font-serif text-xl font-medium tracking-wide text-gold">
+            Control Panel
+          </h2>
           <div className="flex items-center gap-3 text-xs text-warm-ivory/60">
             <span>Salmax Suppliers Admin Dashboard</span>
           </div>

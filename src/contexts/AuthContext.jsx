@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import apiClient, { setAccessToken } from '../api/apiClient';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import apiClient, { setAccessToken } from "../api/apiClient";
 
 const AuthContext = createContext(null);
 
@@ -10,18 +10,25 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const response = await apiClient.get('/auth/refresh');
+        const response = await apiClient.get("/auth/refresh", {
+          timeout: 8000,
+        });
+
         if (response.data?.accessToken) {
           setAccessToken(response.data.accessToken);
-          setUser(response.data.user || { role: 'admin' });
+          setUser(response.data.user || { role: "admin" });
+        } else {
+          setAccessToken("");
+          setUser(null);
         }
       } catch (error) {
-        setAccessToken('');
+        setAccessToken("");
         setUser(null);
       } finally {
         setLoading(false);
       }
     };
+
     initializeAuth();
   }, []);
 
@@ -31,11 +38,11 @@ export const AuthProvider = ({ children }) => {
       (response) => response,
       (error) => {
         if (error.isRefreshFailed) {
-          setAccessToken('');
+          setAccessToken("");
           setUser(null);
         }
         return Promise.reject(error);
-      }
+      },
     );
     return () => {
       apiClient.interceptors.response.eject(interceptor);
@@ -44,51 +51,65 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (emailOrUsername, password) => {
     try {
-      const isEmail = emailOrUsername.includes('@');
-      const payload = isEmail 
-        ? { email: emailOrUsername, password } 
+      const isEmail = emailOrUsername.includes("@");
+      const payload = isEmail
+        ? { email: emailOrUsername, password }
         : { username: emailOrUsername, password };
 
-      const response = await apiClient.post('/auth/login', payload);
+      const response = await apiClient.post("/auth/login", payload);
       const { accessToken: token, user: userData } = response.data;
       setAccessToken(token);
-      setUser(userData || { role: 'admin', username: emailOrUsername });
+      setUser(userData || { role: "admin", username: emailOrUsername });
       return { success: true };
     } catch (error) {
       console.error("Login failed:", error);
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Invalid username/email or password' 
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || "Invalid username/email or password",
       };
     }
   };
 
   const register = async (name, email, password) => {
     try {
-      const response = await apiClient.post('/auth/register', { name, email, password });
+      const response = await apiClient.post("/auth/register", {
+        name,
+        email,
+        password,
+      });
       return { success: true, data: response.data };
     } catch (error) {
       console.error("Registration failed:", error);
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Registration failed' 
+      return {
+        success: false,
+        message: error.response?.data?.message || "Registration failed",
       };
     }
   };
 
   const logout = async () => {
     try {
-      await apiClient.post('/auth/logout');
+      await apiClient.post("/auth/logout");
     } catch (error) {
       console.error("Logout request error:", error);
     } finally {
-      setAccessToken('');
+      setAccessToken("");
       setUser(null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, isAdmin: user?.role === 'admin' || user?.isAdmin }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        isAdmin: user?.role === "admin" || user?.isAdmin,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -97,7 +118,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

@@ -1,107 +1,98 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { PhoneCall, Eye, Info } from 'lucide-react';
-import InquiryModal from './InquiryModal';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Eye, PhoneCall } from "lucide-react";
+import InquiryModal from "./InquiryModal";
 
 export default function ProductCard({ product }) {
   const [showInquiry, setShowInquiry] = useState(false);
 
-  // Check if stock is available
-  const isOutOfStock = product.stock === 0 || (product.sizes && Object.values(product.sizes).every(qty => qty === 0));
-
-  // Determine main image
-  const mainImage = product.image || (product.images && product.images[0]) || '';
+  const mainImage =
+    product.image || (product.images && product.images[0]) || "";
+  const categoryName =
+    typeof product.category === "object"
+      ? product.category?.name
+      : product.category || "Salmax Collection";
 
   return (
     <>
-      <div className="group bg-dark-charcoal border border-gold/10 hover:border-gold/30 rounded-xl overflow-hidden premium-transition flex flex-col h-full relative">
-        
-        {/* Out of Stock Label */}
-        {isOutOfStock && (
-          <div className="absolute top-3 left-3 z-10 bg-red-500/90 text-white text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded">
-            Sold Out
+      <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-gold/15 bg-dark-charcoal shadow-[0_20px_45px_rgba(0,0,0,0.25)] transition duration-300 hover:-translate-y-1 hover:border-gold/30">
+        <div className="relative aspect-4/5 overflow-hidden bg-dark-base/70">
+          <div className="absolute left-3 top-3 z-10 rounded-full border border-gold/20 bg-dark-base/80 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-gold">
+            Negotiable
           </div>
-        )}
 
-        {/* Product Image Area */}
-        <div className="relative aspect-[4/5] bg-dark-base/40 overflow-hidden shrink-0">
           {mainImage ? (
             <img
               src={mainImage}
               alt={product.name}
               loading="lazy"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-105"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-gold/30 p-4">
-              <span className="font-serif text-sm italic">Collection Salmax</span>
+            <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center text-gold/30">
+              <span className="font-serif text-sm italic">
+                Collection Salmax
+              </span>
             </div>
           )}
 
-          {/* Hover Overlay Actions */}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
-            <Link
-              to={`/product/${product._id || product.id}`}
-              className="w-10 h-10 rounded-full bg-white text-dark-base flex items-center justify-center hover:bg-gold hover:text-white transition duration-300 shadow"
-              title="View Details"
-            >
-              <Eye size={18} />
-            </Link>
-            <button
-              onClick={() => setShowInquiry(true)}
-              className="w-10 h-10 rounded-full bg-white text-dark-base flex items-center justify-center hover:bg-gold hover:text-white transition duration-300 shadow"
-              title="Inquire on WhatsApp"
-            >
-              <PhoneCall size={16} />
-            </button>
+          <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/10 to-transparent" />
+
+          <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.25em] text-gold/90">
+                {categoryName}
+              </p>
+              <h3 className="mt-1 font-serif text-lg font-medium text-white">
+                {product.name}
+              </h3>
+            </div>
+            <div className="self-start rounded-full border border-gold/20 bg-dark-base/80 px-3 py-1 text-sm font-semibold text-gold">
+              {product.price
+                ? `KES ${product.price.toLocaleString()}`
+                : "Price on request"}
+            </div>
           </div>
         </div>
 
-        {/* Product Details */}
-        <div className="p-5 flex flex-col justify-between flex-1">
-          <div className="space-y-1.5">
-            {/* Category */}
-            {product.category && (
-              <span className="text-[10px] uppercase tracking-widest text-gold font-medium">
-                {typeof product.category === 'object' ? product.category.name : product.category}
+        <div className="flex flex-1 flex-col p-5">
+          <p className="text-sm leading-6 text-warm-ivory/70">
+            {product.description ||
+              "Tailored for the modern lifestyle with refined texture and craftsmanship."}
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full border border-gold/15 bg-gold/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-gold">
+              {product.productType || "Boutique Collection"}
+            </span>
+            {product.group ? (
+              <span className="rounded-full border border-gold/10 bg-dark-base/70 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-warm-ivory/50">
+                {product.group}
               </span>
-            )}
-
-            {/* Title */}
-            <h3 className="font-serif text-base font-medium text-white tracking-wide truncate">
-              <Link to={`/product/${product._id || product.id}`} className="hover:text-gold transition duration-300">
-                {product.name}
-              </Link>
-            </h3>
-
-            {/* Price */}
-            <p className="text-sm text-warm-ivory/80 font-light font-sans">
-              {product.price ? `KES ${product.price.toLocaleString()}` : 'Price upon Inquiry'}
-            </p>
+            ) : null}
           </div>
 
-          {/* Product Type or availability info */}
-          <div className="mt-4 pt-4 border-t border-gold/5 flex items-center justify-between">
-            <span className="text-[10px] text-warm-ivory/40 uppercase tracking-widest">
-              {product.productType || 'Boutique Collection'}
-            </span>
-            
+          <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Link
+              to={`/product/${product._id || product.id}`}
+              className="flex items-center justify-center gap-2 rounded-lg border border-gold/20 bg-dark-base/80 px-2.5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-warm-ivory transition hover:border-gold hover:text-gold sm:px-3 sm:text-[11px]"
+            >
+              <Eye size={14} />
+              Details
+            </Link>
             <button
               onClick={() => setShowInquiry(true)}
-              className="text-xs uppercase tracking-widest text-gold hover:text-gold-light transition duration-300 flex items-center gap-1 font-medium"
+              className="flex items-center justify-center gap-2 rounded-lg bg-gold px-2.5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-dark-base transition hover:bg-gold-light sm:px-3 sm:text-[11px]"
             >
+              <PhoneCall size={14} />
               Inquire
             </button>
           </div>
         </div>
       </div>
 
-      {/* Inquiry Modal */}
       {showInquiry && (
-        <InquiryModal
-          product={product}
-          onClose={() => setShowInquiry(false)}
-        />
+        <InquiryModal product={product} onClose={() => setShowInquiry(false)} />
       )}
     </>
   );
