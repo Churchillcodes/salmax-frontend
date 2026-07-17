@@ -129,7 +129,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 md:pl-64 min-h-screen flex flex-col">
+      <main className="flex-1 md:pl-64 min-h-screen flex flex-col min-w-0">
         {/* Header bar */}
         <header className="bg-dark-charcoal/40 border-b border-gold/5 px-6 py-4 flex justify-between items-center hidden md:flex">
           <h2 className="font-serif text-xl font-medium tracking-wide text-gold">
@@ -141,7 +141,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Dynamic Page Content */}
-        <div className="flex-1 p-6 pt-20 md:p-8 md:pt-8 overflow-y-auto">
+        <div className="flex-1 p-6 pt-20 md:p-8 md:pt-8 overflow-y-auto min-w-0">
           <Outlet />
         </div>
       </main>
