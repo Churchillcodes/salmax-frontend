@@ -136,7 +136,7 @@ export default function LeadsManagement() {
       ) : filteredLeads.length > 0 ? (
         <div className="bg-dark-charcoal border border-gold/10 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-175 text-left border-collapse">
               <thead>
                 <tr className="bg-dark-base/50 text-[10px] uppercase tracking-widest border-b border-gold/10 text-warm-ivory/50">
                   <th className="px-6 py-4 font-semibold">Customer</th>

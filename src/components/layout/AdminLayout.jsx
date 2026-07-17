@@ -41,7 +41,7 @@ export default function AdminLayout() {
       {/* Mobile Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden fixed bottom-6 right-6 z-50 bg-gold text-dark-base w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-gold-light transition duration-300"
+        className="md:hidden fixed top-4 right-4 z-50 bg-gold text-dark-base w-11 h-11 rounded-full flex items-center justify-center shadow-lg hover:bg-gold-light transition duration-300"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -141,7 +141,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Dynamic Page Content */}
-        <div className="flex-1 p-6 md:p-8 overflow-y-auto">
+        <div className="flex-1 p-6 pt-20 md:p-8 md:pt-8 overflow-y-auto">
           <Outlet />
         </div>
       </main>

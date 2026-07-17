@@ -45,7 +45,7 @@ export default function ProductsManagement() {
   const [formImages, setFormImages] = useState([]);
 
   // Image Upload States
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [stagedFiles, setStagedFiles] = useState([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [rawImages, setRawImages] = useState([]);
 
@@ -98,7 +98,7 @@ export default function ProductsManagement() {
     setFormSizes({});
     setFormImageUrl("");
     setFormImages([]);
-    setSelectedFile(null);
+    setStagedFiles([]);
     setShowFormModal(true);
   };
 
@@ -124,7 +124,7 @@ export default function ProductsManagement() {
     );
     setFormImages(product.images || (product.image ? [product.image] : []));
     setRawImages(product.rawImages || []);
-    setSelectedFile(null);
+    setStagedFiles([]);
     setShowFormModal(true);
   };
 
@@ -166,45 +166,56 @@ export default function ProductsManagement() {
     }
   };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (formImages.length >= 5) {
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const remainingSlots = 5 - formImages.length - stagedFiles.length;
+    if (remainingSlots <= 0) {
       toast.warning("Maximum of 5 images allowed per product.");
+      e.target.value = "";
       return;
     }
 
-    if (editingProduct) {
-      // Upload immediately for existing product
-      setUploadingImage(true);
-      const pId = editingProduct._id || editingProduct.id;
-      const formData = new FormData();
-      formData.append("images", file);
-
-      try {
-        const res = await apiClient.post(`/products/${pId}/images`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        // Reload list of images from updated product response
-        const updatedProd = normalizeProduct(res.data);
-        const nextImages = updatedProd.images || [];
-        setFormImages(nextImages);
-        if (nextImages.length > 0) {
-          setFormImageUrl(nextImages[0]);
-        }
-        toast.success("Image uploaded successfully to Cloudinary.");
-      } catch (err) {
-        console.error("Image upload failed:", err);
-        toast.error("Failed to upload image to Cloudinary.");
-      } finally {
-        setUploadingImage(false);
-      }
-    } else {
-      // For new product, stage file for submit upload
-      setSelectedFile(file);
-      toast.info(
-        "Image staged. It will be uploaded to Cloudinary once product is saved.",
+    const filesToAdd = files.slice(0, remainingSlots);
+    if (files.length > remainingSlots) {
+      toast.warning(
+        `Only ${remainingSlots} more image(s) can be staged (max 5 total).`,
       );
+    }
+
+    setStagedFiles((prev) => [...prev, ...filesToAdd]);
+    e.target.value = ""; // allows re-selecting the same file later if removed
+  };
+
+  const handleRemoveStagedFile = (index) => {
+    setStagedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Manual upload trigger — only for an EXISTING product being edited
+  const handleUploadStagedImages = async () => {
+    if (!editingProduct || stagedFiles.length === 0) return;
+    setUploadingImage(true);
+    const pId = editingProduct._id || editingProduct.id;
+    const formData = new FormData();
+    stagedFiles.forEach((file) => formData.append("images", file));
+
+    try {
+      const res = await apiClient.post(`/products/${pId}/images`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const updatedProd = normalizeProduct(res.data.product);
+      setFormImages(updatedProd.images);
+      setRawImages(updatedProd.rawImages);
+      setStagedFiles([]);
+      toast.success("Images uploaded successfully to Cloudinary.");
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      toast.error(
+        err.response?.data?.message || "Failed to upload images to Cloudinary.",
+      );
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -234,7 +245,7 @@ export default function ProductsManagement() {
       return;
     }
 
-    if (formImages.length === 0 && !selectedFile) {
+    if (formImages.length === 0 && stagedFiles.length === 0) {
       toast.warning(
         "Please provide at least 1 product image URL or upload a file.",
       );
@@ -271,17 +282,16 @@ export default function ProductsManagement() {
       }
 
       // Handle staged file upload if selected (primarily for new product)
-      if (selectedFile && savedProduct) {
+      if (stagedFiles.length > 0 && savedProduct) {
         setUploadingImage(true);
         const pId = savedProduct._id || savedProduct.id;
         const formData = new FormData();
-        formData.append("images", selectedFile);
-
+        stagedFiles.forEach((file) => formData.append("images", file));
         try {
           await apiClient.post(`/products/${pId}/images`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
           });
-          toast.success("Product image uploaded to Cloudinary successfully.");
+          toast.success("Product images uploaded to Cloudinary successfully.");
         } catch (imgErr) {
           console.error("Staged file upload failed:", imgErr);
           toast.error("Staged file upload failed (product details saved).");
@@ -297,7 +307,7 @@ export default function ProductsManagement() {
       );
     } finally {
       setUploadingImage(false);
-      setSelectedFile(null);
+      setStagedFiles([]);
     }
   };
 
@@ -450,7 +460,7 @@ export default function ProductsManagement() {
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {["all", "active", "archived", "low-stock"].map((mode) => (
             <button
               key={mode}
@@ -478,7 +488,7 @@ export default function ProductsManagement() {
       ) : filteredProducts.length > 0 ? (
         <div className="bg-dark-charcoal border border-gold/10 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-205 text-left border-collapse">
               <thead>
                 <tr className="bg-dark-base/50 text-[10px] uppercase tracking-widest border-b border-gold/10 text-warm-ivory/50">
                   <th className="px-6 py-4 font-semibold">Product</th>
@@ -909,17 +919,54 @@ export default function ProductsManagement() {
                       <input
                         type="file"
                         accept="image/*"
+                        multiple
                         onChange={handleFileChange}
                         disabled={uploadingImage}
                         className="w-full bg-dark-base border border-gold/15 rounded text-xs text-white file:bg-gold/15 file:text-gold file:border-none file:px-3 file:py-1.5 file:rounded file:mr-3 file:cursor-pointer disabled:opacity-50"
                       />
-                      {selectedFile && (
-                        <p className="text-[9px] text-gold mt-1">
-                          Staged file:{" "}
-                          <strong className="text-white">
-                            {selectedFile.name}
-                          </strong>
-                        </p>
+
+                      {stagedFiles.length > 0 && (
+                        <div className="space-y-2 mt-2">
+                          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                            {stagedFiles.map((file, index) => (
+                              <div
+                                key={index}
+                                className="relative w-full h-16 rounded border border-gold/30 bg-dark-base overflow-hidden group"
+                              >
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`staged-${index}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveStagedFile(index)}
+                                  className="absolute inset-0 bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-[10px] font-semibold"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          {editingProduct && (
+                            <button
+                              type="button"
+                              onClick={handleUploadStagedImages}
+                              disabled={uploadingImage}
+                              className="w-full bg-gold/15 border border-gold/30 text-gold text-[10px] uppercase tracking-widest font-semibold py-2 rounded hover:bg-gold/25 transition disabled:opacity-50"
+                            >
+                              {uploadingImage
+                                ? "Uploading..."
+                                : `Upload ${stagedFiles.length} Image(s) to Cloudinary`}
+                            </button>
+                          )}
+                          {!editingProduct && (
+                            <p className="text-[9px] text-warm-ivory/40 italic">
+                              These images will upload automatically once you
+                              save the new product.
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
