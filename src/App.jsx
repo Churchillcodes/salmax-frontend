@@ -1,8 +1,14 @@
-import React from 'react'
-import AppRoutes from './routes/AppRoutes'
+import React from "react";
+import AppRoutes from "./routes/AppRoutes";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
-  return <AppRoutes />
+  return (
+    <>
+      <ScrollToTop />
+      <AppRoutes />
+    </>
+  );
 }
 
-export default App
+export default App;
