@@ -22,7 +22,7 @@ export default function LeadsManagement() {
     setLoading(true);
     try {
       const response = await apiClient.get("/leads");
-      setLeads(response.data || []);
+      setLeads((response.data || []).map(normalizeLead));
     } catch (e) {
       console.error("Failed to load leads:", e);
       toast.error("Failed to retrieve customer leads.");
@@ -231,7 +231,9 @@ export default function LeadsManagement() {
                             {lead.phone}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-warm-ivory/40 italic">No number</span>
+                          <span className="text-[10px] text-warm-ivory/40 italic">
+                            No number
+                          </span>
                         )}
                       </td>
                     </tr>
