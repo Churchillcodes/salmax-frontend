@@ -106,7 +106,18 @@ export default function SalesAnalytics() {
 
         // 3. Fallback Revenue Trends (Daily revenue for last 7 order dates)
         if (revenueDataFetched && Array.isArray(revenueDataFetched)) {
-          setRevenueData(revenueDataFetched);
+          const formatted = revenueDataFetched.map((item) => {
+            const [year, month] = (item.month || "").split("-");
+            const label =
+              year && month
+                ? new Date(Number(year), Number(month) - 1).toLocaleDateString(
+                    undefined,
+                    { month: "short", year: "2-digit" },
+                  )
+                : item.month;
+            return { date: label, revenue: item.revenue };
+          });
+          setRevenueData(formatted);
         } else {
           const trendsMap = {};
           orders.forEach((order) => {
@@ -329,7 +340,14 @@ export default function SalesAnalytics() {
                     fontSize={11}
                     tickLine={false}
                   />
-                  <YAxis stroke="#888888" fontSize={11} tickLine={false} />
+                  <YAxis
+                    stroke="#888888"
+                    fontSize={11}
+                    tickLine={false}
+                    tickFormatter={(val) =>
+                      val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val
+                    }
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "#1A1A1A",
@@ -348,6 +366,8 @@ export default function SalesAnalytics() {
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorRevenue)"
+                    dot={{ r: 4, fill: "#C8A24A", strokeWidth: 0 }}
+                    activeDot={{ r: 6 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
