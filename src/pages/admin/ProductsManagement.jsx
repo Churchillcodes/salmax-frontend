@@ -47,6 +47,7 @@ export default function ProductsManagement() {
   // Image Upload States
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [rawImages, setRawImages] = useState([]);
 
   // Fetch Products & Categories
   const fetchProducts = async () => {
@@ -58,7 +59,9 @@ export default function ProductsManagement() {
         apiClient.get("/products/archived").catch(() => ({ data: [] })),
       ]);
 
-      const activeList = (prodRes.data || []).map((product) => normalizeProduct(product));
+      const activeList = (prodRes.data || []).map((product) =>
+        normalizeProduct(product),
+      );
       const archivedList = (archRes.data || []).map((product) => {
         const normalized = normalizeProduct(product);
         normalized.isActive = false;
@@ -120,6 +123,7 @@ export default function ProductsManagement() {
       product.image || (product.images && product.images[0]) || "",
     );
     setFormImages(product.images || (product.image ? [product.image] : []));
+    setRawImages(product.rawImages || []);
     setSelectedFile(null);
     setShowFormModal(true);
   };
@@ -132,7 +136,7 @@ export default function ProductsManagement() {
     if (isCurrentlyActive) {
       // Archive (Soft Delete)
       const confirmArchive = window.confirm(
-        `WARNING: You are about to archive the product "${product.name}".\n\nThis will remove it from all storefront catalog pages and search views. You can restore it later if needed.\n\nDo you want to proceed?`
+        `WARNING: You are about to archive the product "${product.name}".\n\nThis will remove it from all storefront catalog pages and search views. You can restore it later if needed.\n\nDo you want to proceed?`,
       );
       if (!confirmArchive) return;
 
@@ -147,7 +151,7 @@ export default function ProductsManagement() {
     } else {
       // Restore from archive
       const confirmRestore = window.confirm(
-        `You are about to restore the product "${product.name}".\n\nThis will make it active and visible in the boutique catalog again.\n\nDo you want to proceed?`
+        `You are about to restore the product "${product.name}".\n\nThis will make it active and visible in the boutique catalog again.\n\nDo you want to proceed?`,
       );
       if (!confirmRestore) return;
 
@@ -175,7 +179,7 @@ export default function ProductsManagement() {
       setUploadingImage(true);
       const pId = editingProduct._id || editingProduct.id;
       const formData = new FormData();
-      formData.append("image", file);
+      formData.append("images", file);
 
       try {
         const res = await apiClient.post(`/products/${pId}/images`, formData, {
@@ -198,7 +202,9 @@ export default function ProductsManagement() {
     } else {
       // For new product, stage file for submit upload
       setSelectedFile(file);
-      toast.info("Image staged. It will be uploaded to Cloudinary once product is saved.");
+      toast.info(
+        "Image staged. It will be uploaded to Cloudinary once product is saved.",
+      );
     }
   };
 
@@ -229,7 +235,9 @@ export default function ProductsManagement() {
     }
 
     if (formImages.length === 0 && !selectedFile) {
-      toast.warning("Please provide at least 1 product image URL or upload a file.");
+      toast.warning(
+        "Please provide at least 1 product image URL or upload a file.",
+      );
       return;
     }
 
@@ -267,7 +275,7 @@ export default function ProductsManagement() {
         setUploadingImage(true);
         const pId = savedProduct._id || savedProduct.id;
         const formData = new FormData();
-        formData.append("image", selectedFile);
+        formData.append("images", selectedFile);
 
         try {
           await apiClient.post(`/products/${pId}/images`, formData, {
@@ -392,10 +400,13 @@ export default function ProductsManagement() {
 
   const filteredCategoriesForProduct = categories.filter((cat) => {
     if (!formProductType) return false;
-    if (cat.productType?.toLowerCase() !== formProductType.toLowerCase()) return false;
+    if (cat.productType?.toLowerCase() !== formProductType.toLowerCase())
+      return false;
     if (formProductType === "Bags") return true;
-    const catGroup = cat.group === null || cat.group === "None" ? "" : cat.group.toLowerCase();
-    const fGroup = formGroup === "None" || !formGroup ? "" : formGroup.toLowerCase();
+    const catGroup =
+      cat.group === null || cat.group === "None" ? "" : cat.group.toLowerCase();
+    const fGroup =
+      formGroup === "None" || !formGroup ? "" : formGroup.toLowerCase();
     return catGroup === fGroup;
   });
 
@@ -685,7 +696,9 @@ export default function ProductsManagement() {
                     className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2.5 text-xs text-white disabled:opacity-50"
                   >
                     <option value="" disabled>
-                      {!formProductType ? "Select Product Type First" : "Select Category"}
+                      {!formProductType
+                        ? "Select Product Type First"
+                        : "Select Category"}
                     </option>
                     {filteredCategoriesForProduct.map((cat) => (
                       <option key={cat._id || cat.id} value={cat._id || cat.id}>
@@ -807,12 +820,39 @@ export default function ProductsManagement() {
                         {formImages.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={async () => {
                               const confirmDel = window.confirm(
-                                `WARNING: Are you sure you want to remove this product image?\n\nThis will remove it from the product's image assets on save.\n\nDo you want to proceed?`
+                                `WARNING: Are you sure you want to remove this product image?\n\nThis will permanently delete it from Cloudinary.\n\nDo you want to proceed?`,
                               );
-                              if (confirmDel) {
-                                setFormImages((prev) => prev.filter((_, i) => i !== index));
+                              if (!confirmDel) return;
+
+                              const imgObj = rawImages[index];
+                              if (!editingProduct || !imgObj?._id) {
+                                // Fallback for a product not yet saved — just remove locally
+                                setFormImages((prev) =>
+                                  prev.filter((_, i) => i !== index),
+                                );
+                                return;
+                              }
+
+                              try {
+                                const pId =
+                                  editingProduct._id || editingProduct.id;
+                                const res = await apiClient.delete(
+                                  `/products/${pId}/images/${imgObj._id}`,
+                                );
+                                const updated = normalizeProduct(
+                                  res.data.product,
+                                );
+                                setFormImages(updated.images);
+                                setRawImages(updated.rawImages);
+                                toast.success("Image deleted successfully.");
+                              } catch (err) {
+                                console.error("Image delete failed:", err);
+                                toast.error(
+                                  err.response?.data?.message ||
+                                    "Could not delete image.",
+                                );
                               }
                             }}
                             className="absolute inset-0 bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300 text-xs font-semibold"
@@ -843,7 +883,8 @@ export default function ProductsManagement() {
                         <button
                           type="button"
                           onClick={() => {
-                            const inputEl = document.getElementById("new-image-url");
+                            const inputEl =
+                              document.getElementById("new-image-url");
                             const url = inputEl ? inputEl.value.trim() : "";
                             if (!url) return;
                             if (formImages.length >= 5) {
@@ -874,14 +915,18 @@ export default function ProductsManagement() {
                       />
                       {selectedFile && (
                         <p className="text-[9px] text-gold mt-1">
-                          Staged file: <strong className="text-white">{selectedFile.name}</strong>
+                          Staged file:{" "}
+                          <strong className="text-white">
+                            {selectedFile.name}
+                          </strong>
                         </p>
                       )}
                     </div>
                   </div>
                 ) : (
                   <p className="text-[10px] text-amber-500 italic bg-amber-500/5 p-2 rounded border border-amber-500/10">
-                    Maximum limit of 5 product images reached. Remove an image to add or upload another.
+                    Maximum limit of 5 product images reached. Remove an image
+                    to add or upload another.
                   </p>
                 )}
               </div>
@@ -900,7 +945,9 @@ export default function ProductsManagement() {
                         <div
                           key={size}
                           className={`p-3 border rounded-lg text-center transition ${
-                            isChecked ? "bg-gold/10 border-gold" : "bg-dark-base/50 border-gold/10 opacity-60"
+                            isChecked
+                              ? "bg-gold/10 border-gold"
+                              : "bg-dark-base/50 border-gold/10 opacity-60"
                           }`}
                         >
                           <div className="flex items-center justify-between mb-1">
@@ -909,12 +956,17 @@ export default function ProductsManagement() {
                               checked={isChecked}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setFormSizes((prev) => ({ ...prev, [size]: 0 }));
+                                  setFormSizes((prev) => ({
+                                    ...prev,
+                                    [size]: 0,
+                                  }));
                                 } else {
                                   setFormSizes((prev) => {
                                     const next = { ...prev };
                                     delete next[size];
-                                    const nextStock = Object.values(next).reduce((a, b) => a + b, 0);
+                                    const nextStock = Object.values(
+                                      next,
+                                    ).reduce((a, b) => a + b, 0);
                                     setFormStock(nextStock);
                                     return next;
                                   });
@@ -936,7 +988,10 @@ export default function ProductsManagement() {
                                 const val = parseInt(e.target.value) || 0;
                                 setFormSizes((prev) => {
                                   const next = { ...prev, [size]: val };
-                                  const nextStock = Object.values(next).reduce((a, b) => a + b, 0);
+                                  const nextStock = Object.values(next).reduce(
+                                    (a, b) => a + b,
+                                    0,
+                                  );
                                   setFormStock(nextStock);
                                   return next;
                                 });

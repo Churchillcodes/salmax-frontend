@@ -2,9 +2,9 @@ export const SIZE_OPTIONS = {
   Shoes: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"],
   Clothes: {
     Adult: ["XS", "S", "M", "L", "XL", "XXL"],
-    Children: ["2-3Y", "4-5Y", "6-7Y", "8-9Y", "10-11Y", "12-13Y"]
+    Children: ["2-3Y", "4-5Y", "6-7Y", "8-9Y", "10-11Y", "12-13Y"],
   },
-  Bags: ["One Size"]
+  Bags: ["One Size"],
 };
 
 export const getId = (item) => item?._id || item?.id || "";
@@ -85,6 +85,7 @@ export const normalizeProduct = (product, categoryOverride = null) => {
   const images = normalizeImages(
     product?.images || (product?.image ? [product.image] : []),
   );
+  const rawImages = Array.isArray(product?.images) ? product.images : [];
   const image = images[0] || getImageUrl(product?.image) || "";
   const sizes = normalizeSizes(product?.sizes);
   const stock = Number(
@@ -106,6 +107,7 @@ export const normalizeProduct = (product, categoryOverride = null) => {
     totalQuantity: Number(product?.totalQuantity ?? stock),
     sizes,
     images,
+    rawImages,
     image,
     category,
     productType: product?.productType || category?.productType || "",
@@ -136,8 +138,6 @@ export const buildProductPayload = ({
     .filter(([, quantity]) => quantity !== undefined)
     .map(([size, quantity]) => ({ size, quantity: Number(quantity || 0) })),
   isActive,
-  image: image || "",
-  images: images || [],
 });
 
 export const normalizeLead = (lead) => {
