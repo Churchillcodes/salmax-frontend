@@ -129,7 +129,13 @@ export default function SalesAnalytics() {
 
         // 4. Fallback Top Products (Count purchases per product name)
         if (topProductsFetched && Array.isArray(topProductsFetched)) {
-          setTopProducts(topProductsFetched);
+          setTopProducts(
+            topProductsFetched.map((p) => ({
+              name: p.productName,
+              sales: p.unitsSold,
+              revenue: p.revenue,
+            })),
+          );
         } else {
           const productSalesMap = {};
           orders.forEach((order) => {
@@ -360,58 +366,98 @@ export default function SalesAnalytics() {
               <TrendingUp size={16} className="text-gold" />
             </div>
             <div>
-              <h3 className="font-serif text-base text-white tracking-wide">Category Demand Split</h3>
-              <p className="text-[10px] text-warm-ivory/40 uppercase tracking-wider mt-0.5">Share of store revenues</p>
+              <h3 className="font-serif text-base text-white tracking-wide">
+                Category Demand Split
+              </h3>
+              <p className="text-[10px] text-warm-ivory/40 uppercase tracking-wider mt-0.5">
+                Share of store revenues
+              </p>
             </div>
           </div>
 
-          {breakdown.length > 0 ? (() => {
-            const getVal = (item) => item.value !== undefined ? item.value : (item.amount || item.total || item.revenue || item.totalAmount || item.totalSales || item.sales || 0);
-            const getName = (item) => item.name || item.category || item.type || item.productType || item._id || "Unassigned";
-            const totalValue = breakdown.reduce((s, b) => s + getVal(b), 0);
-            return (
-              <div className="space-y-5">
-                {breakdown.map((cat, idx) => {
-                  const val = getVal(cat);
-                  const name = getName(cat);
-                  const pct = totalValue > 0 ? Math.round((val / totalValue) * 100) : 0;
-                  const itemCount = (() => {
-                    // count items in this category from orders
-                    let count = 0;
-                    ordersDataset.forEach((order) => {
-                      if (order.status?.toLowerCase() !== "cancelled" && order.items) {
-                        order.items.forEach((item) => {
-                          if ((item.productType || "") === name || name === "Unassigned") count += (item.quantity || 1);
-                        });
-                      }
-                    });
-                    return count;
-                  })();
-                  const barColors = ["bg-gold", "bg-emerald-500", "bg-teal-400", "bg-amber-400", "bg-rose-400"];
-                  return (
-                    <div key={name || idx}>
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-sm font-semibold text-white">{name}</span>
-                        <span className="text-xs text-warm-ivory/60">{pct}%{itemCount > 0 ? ` (${itemCount} items)` : ""}</span>
+          {breakdown.length > 0 ? (
+            (() => {
+              const getVal = (item) =>
+                item.value !== undefined
+                  ? item.value
+                  : item.amount ||
+                    item.total ||
+                    item.revenue ||
+                    item.totalAmount ||
+                    item.totalSales ||
+                    item.sales ||
+                    0;
+              const getName = (item) =>
+                item.name ||
+                item.category ||
+                item.type ||
+                item.productType ||
+                item._id ||
+                "Unassigned";
+              const totalValue = breakdown.reduce((s, b) => s + getVal(b), 0);
+              return (
+                <div className="space-y-5">
+                  {breakdown.map((cat, idx) => {
+                    const val = getVal(cat);
+                    const name = getName(cat);
+                    const pct =
+                      totalValue > 0 ? Math.round((val / totalValue) * 100) : 0;
+                    const itemCount = (() => {
+                      // count items in this category from orders
+                      let count = 0;
+                      ordersDataset.forEach((order) => {
+                        if (
+                          order.status?.toLowerCase() !== "cancelled" &&
+                          order.items
+                        ) {
+                          order.items.forEach((item) => {
+                            if (
+                              (item.productType || "") === name ||
+                              name === "Unassigned"
+                            )
+                              count += item.quantity || 1;
+                          });
+                        }
+                      });
+                      return count;
+                    })();
+                    const barColors = [
+                      "bg-gold",
+                      "bg-emerald-500",
+                      "bg-teal-400",
+                      "bg-amber-400",
+                      "bg-rose-400",
+                    ];
+                    return (
+                      <div key={name || idx}>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className="text-sm font-semibold text-white">
+                            {name}
+                          </span>
+                          <span className="text-xs text-warm-ivory/60">
+                            {pct}%{itemCount > 0 ? ` (${itemCount} items)` : ""}
+                          </span>
+                        </div>
+                        <div className="h-2.5 bg-dark-base rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${barColors[idx % barColors.length]} rounded-full transition-all duration-700`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <p className="text-right text-[10px] text-warm-ivory/40 mt-1">
+                          KES {val.toLocaleString()}
+                        </p>
                       </div>
-                      <div className="h-2.5 bg-dark-base rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${barColors[idx % barColors.length]} rounded-full transition-all duration-700`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <p className="text-right text-[10px] text-warm-ivory/40 mt-1">
-                        KES {val.toLocaleString()}
-                      </p>
-                    </div>
-                  );
-                })}
-                <p className="text-[10px] text-warm-ivory/40 italic pt-2 border-t border-gold/10">
-                  Category data is aggregated dynamically as orders are marked complete.
-                </p>
-              </div>
-            );
-          })() : (
+                    );
+                  })}
+                  <p className="text-[10px] text-warm-ivory/40 italic pt-2 border-t border-gold/10">
+                    Category data is aggregated dynamically as orders are marked
+                    complete.
+                  </p>
+                </div>
+              );
+            })()
+          ) : (
             <p className="text-center py-20 text-xs text-warm-ivory/40">
               No product classifications cataloged.
             </p>
@@ -429,41 +475,59 @@ export default function SalesAnalytics() {
                 <Award size={16} className="text-gold" />
               </div>
               <div>
-                <h3 className="font-serif text-base text-white tracking-wide">Top Selling Products</h3>
-                <p className="text-[10px] text-warm-ivory/40 uppercase tracking-wider mt-0.5">Ranked by volume of units sold</p>
+                <h3 className="font-serif text-base text-white tracking-wide">
+                  Top Selling Products
+                </h3>
+                <p className="text-[10px] text-warm-ivory/40 uppercase tracking-wider mt-0.5">
+                  Ranked by volume of units sold
+                </p>
               </div>
             </div>
-            {topProducts.length > 0 ? (() => {
-              const getSales = (p) => p.sales !== undefined ? p.sales : (p.count || p.quantity || p.salesCount || 0);
-              const getRevenue = (p) => p.revenue !== undefined ? p.revenue : (p.total || p.amount || p.totalAmount || 0);
-              const maxSales = Math.max(...topProducts.map((p) => getSales(p)), 1);
-              return (
-                <div className="space-y-4">
-                  {topProducts.map((prod, idx) => {
-                    const sales = getSales(prod);
-                    const revenue = getRevenue(prod);
-                    return (
-                      <div key={prod.name || idx}>
-                        <div className="flex justify-between items-center mb-1.5">
-                          <span className="text-sm font-semibold text-white">
-                            {idx + 1}. {prod.name || "Unknown Product"}
-                          </span>
-                          <span className="text-xs text-warm-ivory/60">
-                            {sales} sold{revenue ? ` · KES ${Number(revenue).toLocaleString()}` : ""}
-                          </span>
+            {topProducts.length > 0 ? (
+              (() => {
+                const getSales = (p) =>
+                  p.sales !== undefined
+                    ? p.sales
+                    : p.count || p.quantity || p.salesCount || 0;
+                const getRevenue = (p) =>
+                  p.revenue !== undefined
+                    ? p.revenue
+                    : p.total || p.amount || p.totalAmount || 0;
+                const maxSales = Math.max(
+                  ...topProducts.map((p) => getSales(p)),
+                  1,
+                );
+                return (
+                  <div className="space-y-4">
+                    {topProducts.map((prod, idx) => {
+                      const sales = getSales(prod);
+                      const revenue = getRevenue(prod);
+                      return (
+                        <div key={prod.name || idx}>
+                          <div className="flex justify-between items-center mb-1.5">
+                            <span className="text-sm font-semibold text-white">
+                              {idx + 1}. {prod.name || "Unknown Product"}
+                            </span>
+                            <span className="text-xs text-warm-ivory/60">
+                              {sales} sold
+                              {revenue
+                                ? ` · KES ${Number(revenue).toLocaleString()}`
+                                : ""}
+                            </span>
+                          </div>
+                          <div className="h-2 bg-dark-base rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gold rounded-full transition-all duration-700"
+                              style={{ width: `${(sales / maxSales) * 100}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="h-2 bg-dark-base rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gold rounded-full transition-all duration-700"
-                            style={{ width: `${(sales / maxSales) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })() : (
+                      );
+                    })}
+                  </div>
+                );
+              })()
+            ) : (
               <p className="text-xs text-warm-ivory/40 text-center py-10">
                 No top products data compiled.
               </p>
