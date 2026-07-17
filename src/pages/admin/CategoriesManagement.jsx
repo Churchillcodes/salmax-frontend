@@ -69,6 +69,13 @@ export default function CategoriesManagement() {
 
   const handleToggleActive = async (cat) => {
     const nextActive = cat.isActive === false;
+    if (!nextActive) {
+      const confirmArchive = window.confirm(
+        `WARNING: You are about to archive the category "${cat.name}".\n\nThis will hide this category from storefront filters, and any active products linked to this category may display empty categories.\n\nDo you want to proceed?`
+      );
+      if (!confirmArchive) return;
+    }
+
     try {
       await apiClient.patch(`/categories/${cat._id || cat.id}`, {
         isActive: nextActive,
@@ -86,7 +93,7 @@ export default function CategoriesManagement() {
   const handleDeleteCategory = async (catId) => {
     if (
       !window.confirm(
-        "Are you sure you want to delete this category? Products linked to this category may display empty categories.",
+        "WARNING: You are about to permanently DELETE this category.\n\nThis action cannot be undone. Products linked to this category will display empty categories.\n\nDo you want to proceed?"
       )
     ) {
       return;
@@ -108,12 +115,16 @@ export default function CategoriesManagement() {
       toast.warning("Category title is required.");
       return;
     }
+    if (!productType) {
+      toast.warning("Product Type is required.");
+      return;
+    }
 
     const payload = {
       name,
       description,
       productType,
-      group,
+      group: group === "None" || !group ? null : group,
       isActive,
     };
 
@@ -310,26 +321,48 @@ export default function CategoriesManagement() {
                   <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
                     Product Type
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={productType}
-                    onChange={(e) => setProductType(e.target.value)}
-                    placeholder="e.g., Ready-to-Wear"
-                    className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2 text-xs text-white"
-                  />
+                    onChange={(e) => {
+                      setProductType(e.target.value);
+                      setGroup("");
+                    }}
+                    className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2.5 text-xs text-white"
+                  >
+                    <option value="">Select Type</option>
+                    <option value="Shoes">Shoes</option>
+                    <option value="Clothes">Clothes</option>
+                    <option value="Bags">Bags</option>
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
                     Collection Group
                   </label>
-                  <input
-                    type="text"
-                    value={group}
+                  <select
+                    value={group || ""}
                     onChange={(e) => setGroup(e.target.value)}
-                    placeholder="e.g., Signature"
-                    className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2 text-xs text-white"
-                  />
+                    disabled={!productType || productType === "Bags"}
+                    className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2.5 text-xs text-white disabled:opacity-50"
+                  >
+                    <option value="">None</option>
+                    {productType === "Shoes" && (
+                      <>
+                        <option value="Men">Men</option>
+                        <option value="Ladies">Ladies</option>
+                        <option value="Kids">Kids</option>
+                      </>
+                    )}
+                    {productType === "Clothes" && (
+                      <>
+                        <option value="Women">Women</option>
+                        <option value="Girls">Girls</option>
+                        <option value="Men">Men</option>
+                        <option value="Boys">Boys</option>
+                      </>
+                    )}
+                  </select>
                 </div>
               </div>
 

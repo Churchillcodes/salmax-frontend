@@ -1,3 +1,12 @@
+export const SIZE_OPTIONS = {
+  Shoes: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"],
+  Clothes: {
+    Adult: ["XS", "S", "M", "L", "XL", "XXL"],
+    Children: ["2-3Y", "4-5Y", "6-7Y", "8-9Y", "10-11Y", "12-13Y"]
+  },
+  Bags: ["One Size"]
+};
+
 export const getId = (item) => item?._id || item?.id || "";
 
 export const getImageUrl = (image) => {
@@ -115,6 +124,7 @@ export const buildProductPayload = ({
   isActive,
   sizes,
   image,
+  images,
 }) => ({
   name,
   listedPrice: Number(price || 0),
@@ -127,6 +137,7 @@ export const buildProductPayload = ({
     .map(([size, quantity]) => ({ size, quantity: Number(quantity || 0) })),
   isActive,
   image: image || "",
+  images: images || [],
 });
 
 export const normalizeLead = (lead) => {
@@ -174,7 +185,7 @@ export const normalizeOrder = (order) => {
     ),
     total: Number(order?.totalAmount ?? order?.total ?? unitPrice * quantity),
     quantity,
-    status: order?.status || "",
+    status: order?.status || "pending",
     items: order?.items?.length
       ? order?.items
       : [

@@ -13,6 +13,7 @@ import {
   X,
   User,
   ExternalLink,
+  ReceiptText,
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -31,6 +32,7 @@ export default function AdminLayout() {
     { path: "/admin/categories", label: "Categories", icon: FolderOpen },
     { path: "/admin/orders", label: "Orders", icon: ClipboardList },
     { path: "/admin/analytics", label: "Sales Analytics", icon: BarChart3 },
+    { path: "/admin/sales-logs", label: "Sales Logs", icon: ReceiptText },
     { path: "/admin/leads", label: "Leads Log", icon: Users2 },
   ];
 

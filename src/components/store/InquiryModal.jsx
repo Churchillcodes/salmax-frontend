@@ -20,6 +20,13 @@ export default function InquiryModal({ product, onClose }) {
       toast.warning("Please fill in all required fields.");
       return;
     }
+
+    const phoneRegex = /^\+?[0-9\s\-()]{7,15}$/;
+    if (!phoneRegex.test(phone.trim())) {
+      toast.warning("Please enter a valid phone number.");
+      return;
+    }
+
     if (source === "Other" && !otherSource.trim()) {
       toast.warning("Please specify how you found out about us.");
       return;

@@ -146,7 +146,7 @@ export default function LeadsManagement() {
                   </th>
                   <th className="px-6 py-4 font-semibold">Submission Date</th>
                   <th className="px-6 py-4 font-semibold text-right">
-                    Direct Action
+                    Phone Number
                   </th>
                 </tr>
               </thead>
@@ -223,22 +223,15 @@ export default function LeadsManagement() {
                         <span>{dateStr}</span>
                       </td>
 
-                      {/* WhatsApp trigger */}
+                      {/* Phone Number */}
                       <td className="px-6 py-4 text-right">
-                        {cleanPhone ? (
-                          <a
-                            href={waLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-dark-base font-semibold px-3 py-1.5 rounded text-[10px] uppercase tracking-widest transition duration-300"
-                          >
-                            <MessageSquare size={10} />
-                            Chat WhatsApp
-                          </a>
-                        ) : (
-                          <span className="text-[10px] text-warm-ivory/40 italic">
-                            No number
+                        {lead.phone ? (
+                          <span className="inline-flex items-center gap-1.5 text-white/90 font-medium">
+                            <Phone size={12} className="text-gold/70" />
+                            {lead.phone}
                           </span>
+                        ) : (
+                          <span className="text-[10px] text-warm-ivory/40 italic">No number</span>
                         )}
                       </td>
                     </tr>

@@ -18,6 +18,18 @@ export default function Contact() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.warning('Please enter a valid email address.');
+      return;
+    }
+
+    const phoneRegex = /^\+?[0-9\s\-()]{7,15}$/;
+    if (!phoneRegex.test(phone.trim())) {
+      toast.warning('Please enter a valid phone number.');
+      return;
+    }
+
     setSubmitting(true);
     const leadData = {
       name,

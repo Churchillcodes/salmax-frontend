@@ -20,6 +20,7 @@ import CategoriesManagement from '../pages/admin/CategoriesManagement';
 import OrdersManagement from '../pages/admin/OrdersManagement';
 import SalesAnalytics from '../pages/admin/SalesAnalytics';
 import LeadsManagement from '../pages/admin/LeadsManagement';
+import SalesLogs from '../pages/admin/SalesLogs';
 
 export default function AppRoutes() {
   return (
@@ -53,6 +54,7 @@ export default function AppRoutes() {
         <Route path="orders" element={<OrdersManagement />} />
         <Route path="analytics" element={<SalesAnalytics />} />
         <Route path="leads" element={<LeadsManagement />} />
+        <Route path="sales-logs" element={<SalesLogs />} />
       </Route>
     </Routes>
   );

@@ -11,6 +11,7 @@ import {
   Truck,
   TrendingUp,
   ArrowRight,
+  DollarSign,
 } from "lucide-react";
 import apiClient from "../../api/apiClient";
 import {
@@ -23,7 +24,10 @@ export default function DashboardOverview() {
   const [stats, setStats] = useState({
     products: { total: 0, active: 0, archived: 0, lowStock: 0 },
     orders: { total: 0, pending: 0, confirmed: 0, delivered: 0, cancelled: 0 },
+    revenue: { total: 0, monthly: 0 },
     leadsCount: 0,
+    topLeadSource: "None",
+    leadsBySource: [],
   });
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentLeads, setRecentLeads] = useState([]);
@@ -46,15 +50,22 @@ export default function DashboardOverview() {
         }
 
         // 2. Fetch primary datasets in parallel to build recent lists and calculate fallback stats
-        const [productsRes, ordersRes, leadsRes] = await Promise.all([
+        const [productsRes, ordersRes, leadsRes, archProductsRes] = await Promise.all([
           apiClient.get("/products").catch(() => ({ data: [] })),
           apiClient.get("/orders").catch(() => ({ data: [] })),
           apiClient.get("/leads").catch(() => ({ data: [] })),
+          apiClient.get("/products/archived").catch(() => ({ data: [] })),
         ]);
 
-        const products = (productsRes.data || []).map((product) =>
+        const activeProducts = (productsRes.data || []).map((product) =>
           normalizeProduct(product),
         );
+        const archivedProducts = (archProductsRes.data || []).map((product) => {
+          const normalized = normalizeProduct(product);
+          normalized.isActive = false;
+          return normalized;
+        });
+        const products = [...activeProducts, ...archivedProducts];
         const orders = (ordersRes.data || []).map((order) =>
           normalizeOrder(order),
         );
@@ -62,6 +73,44 @@ export default function DashboardOverview() {
 
         setRecentOrders(orders.slice(0, 5));
         setRecentLeads(leads.slice(0, 5));
+
+        // Client-side calculations for revenue & leads analytics
+        const deliveredOrders = orders.filter(
+          (o) => o.status?.toLowerCase() === "delivered"
+        );
+        const totalStoreRevenue = deliveredOrders.reduce(
+          (sum, o) => sum + (o.totalAmount || o.total || 0),
+          0
+        );
+
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        const monthlyDeliveredOrders = deliveredOrders.filter((o) => {
+          const dateStr = o.createdAt || o.date;
+          if (!dateStr) return false;
+          const d = new Date(dateStr);
+          return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+        });
+        const monthlySalesVolume = monthlyDeliveredOrders.reduce(
+          (sum, o) => sum + (o.totalAmount || o.total || 0),
+          0
+        );
+
+        const totalLeads = leads.length;
+        const sourceCounts = {};
+        leads.forEach((l) => {
+          const src = l.source || "Unknown";
+          sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+        });
+        const sortedSources = Object.entries(sourceCounts)
+          .map(([source, count]) => ({
+            source,
+            count,
+            percentage: totalLeads > 0 ? Math.round((count / totalLeads) * 100) : 0,
+          }))
+          .sort((a, b) => b.count - a.count);
+        const topLeadSource = sortedSources.length > 0 ? sortedSources[0].source : "None";
 
         if (summaryData) {
           // If summary endpoint worked, use its values but map properly
@@ -97,7 +146,13 @@ export default function DashboardOverview() {
                 orders.filter((o) => o.status?.toLowerCase() === "cancelled")
                   .length,
             },
+            revenue: {
+              total: totalStoreRevenue,
+              monthly: monthlySalesVolume,
+            },
             leadsCount: summaryData.totalLeads || leads.length,
+            topLeadSource,
+            leadsBySource: sortedSources,
           });
         } else {
           // Client-side calculations fallback
@@ -131,7 +186,13 @@ export default function DashboardOverview() {
                 (o) => o.status?.toLowerCase() === "cancelled",
               ).length,
             },
-            leadsCount: leads.length,
+            revenue: {
+              total: totalStoreRevenue,
+              monthly: monthlySalesVolume,
+            },
+            leadsCount: totalLeads,
+            topLeadSource,
+            leadsBySource: sortedSources,
           });
         }
       } catch (error) {
@@ -243,6 +304,41 @@ export default function DashboardOverview() {
         </p>
       </div>
 
+      {/* Financial Performance Section */}
+      <div>
+        <h3 className="text-xs uppercase tracking-widest text-gold font-semibold mb-4">
+          Financial Performance
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="bg-dark-charcoal border border-gold/10 p-5 rounded-xl flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs text-warm-ivory/50 font-light">
+                Total Store Revenue
+              </p>
+              <p className="text-2xl font-semibold text-white font-serif">
+                KES {stats.revenue.total.toLocaleString()}
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-lg bg-gold/5 border border-gold/10 text-gold flex items-center justify-center">
+              <DollarSign size={20} />
+            </div>
+          </div>
+          <div className="bg-dark-charcoal border border-gold/10 p-5 rounded-xl flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs text-warm-ivory/50 font-light">
+                Monthly Sales Volume
+              </p>
+              <p className="text-2xl font-semibold text-white font-serif">
+                KES {stats.revenue.monthly.toLocaleString()}
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-lg bg-gold/5 border border-gold/10 text-gold flex items-center justify-center">
+              <TrendingUp size={20} />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Inventory section */}
       <div>
         <h3 className="text-xs uppercase tracking-widest text-gold font-semibold mb-4">
@@ -307,25 +403,72 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {/* Leads Highlight */}
-      <div className="bg-gradient-to-r from-gold/5 via-gold/1 to-transparent border border-gold/20 p-6 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="space-y-1 text-center sm:text-left">
-          <h4 className="text-sm font-semibold tracking-wider text-white">
-            WhatsApp Client Leads Captured
-          </h4>
-          <p className="text-xs text-warm-ivory/60 font-light">
-            You have received{" "}
-            <strong className="text-gold font-serif">{stats.leadsCount}</strong>{" "}
-            product inquiry submissions.
-          </p>
+      {/* Leads Analytics Card */}
+      <div className="bg-dark-charcoal border border-gold/10 p-6 rounded-xl space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gold/10 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center">
+              <Users size={16} className="text-gold" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold tracking-wider text-white">
+                WhatsApp Client Leads Captured
+              </h4>
+              <p className="text-[10px] text-warm-ivory/40 uppercase tracking-wider mt-0.5">
+                Total inquiry submissions and referral sources
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/admin/leads"
+            className="text-xs bg-gold text-dark-base uppercase tracking-widest font-semibold px-4 py-2 rounded flex items-center gap-1.5 hover:bg-gold-light transition duration-300 self-stretch sm:self-auto justify-center"
+          >
+            View Leads Log
+            <ArrowRight size={14} />
+          </Link>
         </div>
-        <Link
-          to="/admin/leads"
-          className="text-xs bg-gold text-dark-base uppercase tracking-widest font-semibold px-4 py-2 rounded flex items-center gap-1.5 hover:bg-gold-light transition duration-300"
-        >
-          View Leads Log
-          <ArrowRight size={14} />
-        </Link>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+          {/* Summary stats */}
+          <div className="md:col-span-4 space-y-4 flex flex-col justify-center">
+            <div className="p-4 bg-dark-base/30 border border-gold/5 rounded-lg text-center md:text-left">
+              <p className="text-[10px] text-warm-ivory/40 uppercase tracking-wider font-light">Total Inquiry Leads</p>
+              <h3 className="text-3xl font-bold font-serif text-white mt-1">{stats.leadsCount}</h3>
+            </div>
+            <div className="p-4 bg-dark-base/30 border border-gold/5 rounded-lg text-center md:text-left">
+              <p className="text-[10px] text-warm-ivory/40 uppercase tracking-wider font-light">Top Lead Source</p>
+              <h3 className="text-xl font-bold text-gold font-serif mt-1">{stats.topLeadSource}</h3>
+            </div>
+          </div>
+
+          {/* Referral source progress list */}
+          <div className="md:col-span-8 space-y-3.5">
+            <h5 className="text-[10px] text-warm-ivory/40 uppercase tracking-wider font-semibold">Leads by Referral Channel</h5>
+            {stats.leadsBySource.length > 0 ? (
+              <div className="space-y-3">
+                {stats.leadsBySource.map((src, idx) => {
+                  const barColors = ["bg-gold", "bg-emerald-500", "bg-teal-400", "bg-amber-400", "bg-rose-400"];
+                  return (
+                    <div key={src.source}>
+                      <div className="flex justify-between items-center text-xs mb-1">
+                        <span className="font-semibold text-white/95">{src.source}</span>
+                        <span className="text-warm-ivory/60">{src.count} leads ({src.percentage}%)</span>
+                      </div>
+                      <div className="h-2 bg-dark-base rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${barColors[idx % barColors.length]} rounded-full transition-all duration-700`}
+                          style={{ width: `${src.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-warm-ivory/40 italic">No referral channel statistics compiled.</p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Recent Activity Grid */}

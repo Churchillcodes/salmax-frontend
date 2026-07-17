@@ -19,6 +19,7 @@ import {
   buildProductPayload,
   normalizeCategory,
   normalizeProduct,
+  SIZE_OPTIONS,
 } from "../../utils/apiData";
 
 export default function ProductsManagement() {
@@ -41,6 +42,7 @@ export default function ProductsManagement() {
   const [formIsActive, setFormIsActive] = useState(true);
   const [formSizes, setFormSizes] = useState({ S: 0, M: 0, L: 0, XL: 0 });
   const [formImageUrl, setFormImageUrl] = useState("");
+  const [formImages, setFormImages] = useState([]);
 
   // Image Upload States
   const [selectedFile, setSelectedFile] = useState(null);
@@ -50,17 +52,20 @@ export default function ProductsManagement() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const [prodRes, catRes] = await Promise.all([
+      const [prodRes, catRes, archRes] = await Promise.all([
         apiClient.get("/products"),
         apiClient.get("/categories"),
+        apiClient.get("/products/archived").catch(() => ({ data: [] })),
       ]);
 
-      console.log("PRODUCTS:", prodRes.data);
-      console.log("FIRST PRODUCT SIZES:", prodRes.data?.[0]?.sizes);
+      const activeList = (prodRes.data || []).map((product) => normalizeProduct(product));
+      const archivedList = (archRes.data || []).map((product) => {
+        const normalized = normalizeProduct(product);
+        normalized.isActive = false;
+        return normalized;
+      });
 
-      setProducts(
-        (prodRes.data || []).map((product) => normalizeProduct(product)),
-      );
+      setProducts([...activeList, ...archivedList]);
       setCategories(
         (catRes.data || []).map((category) => normalizeCategory(category)),
       );
@@ -82,13 +87,14 @@ export default function ProductsManagement() {
     setFormName("");
     setFormPrice("");
     setFormDescription("");
-    setFormCategory(categories[0]?._id || categories[0]?.id || "");
+    setFormCategory("");
     setFormProductType("");
     setFormGroup("");
     setFormStock(0);
     setFormIsActive(true);
-    setFormSizes({ S: 0, M: 0, L: 0, XL: 0 });
+    setFormSizes({});
     setFormImageUrl("");
+    setFormImages([]);
     setSelectedFile(null);
     setShowFormModal(true);
   };
@@ -109,36 +115,121 @@ export default function ProductsManagement() {
     setFormGroup(product.group || product.productGroup || "");
     setFormStock(product.stock || 0);
     setFormIsActive(product.isActive !== false);
-    setFormSizes(product.sizes || { S: 0, M: 0, L: 0, XL: 0 });
+    setFormSizes(product.sizes || {});
     setFormImageUrl(
       product.image || (product.images && product.images[0]) || "",
     );
+    setFormImages(product.images || (product.image ? [product.image] : []));
     setSelectedFile(null);
     setShowFormModal(true);
   };
 
   // Toggle archive status
   const handleToggleActive = async (product) => {
-    const nextActiveState = product.isActive === false;
-    try {
-      await apiClient.patch(`/products/${product._id || product.id}`, {
-        isActive: nextActiveState,
-      });
-      toast.success(
-        `Product ${nextActiveState ? "activated" : "archived"} successfully.`,
+    const isCurrentlyActive = product.isActive !== false;
+    const pId = product._id || product.id;
+
+    if (isCurrentlyActive) {
+      // Archive (Soft Delete)
+      const confirmArchive = window.confirm(
+        `WARNING: You are about to archive the product "${product.name}".\n\nThis will remove it from all storefront catalog pages and search views. You can restore it later if needed.\n\nDo you want to proceed?`
       );
-      fetchProducts();
-    } catch (e) {
-      console.error("Failed to toggle status:", e);
-      toast.error("Could not modify archive status.");
+      if (!confirmArchive) return;
+
+      try {
+        await apiClient.delete(`/products/${pId}`);
+        toast.success("Product archived successfully.");
+        fetchProducts();
+      } catch (e) {
+        console.error("Failed to archive product:", e);
+        toast.error("Could not archive product.");
+      }
+    } else {
+      // Restore from archive
+      const confirmRestore = window.confirm(
+        `You are about to restore the product "${product.name}".\n\nThis will make it active and visible in the boutique catalog again.\n\nDo you want to proceed?`
+      );
+      if (!confirmRestore) return;
+
+      try {
+        await apiClient.patch(`/products/${pId}/restore`);
+        toast.success("Product restored successfully.");
+        fetchProducts();
+      } catch (e) {
+        console.error("Failed to restore product:", e);
+        toast.error("Could not restore product.");
+      }
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (formImages.length >= 5) {
+      toast.warning("Maximum of 5 images allowed per product.");
+      return;
+    }
+
+    if (editingProduct) {
+      // Upload immediately for existing product
+      setUploadingImage(true);
+      const pId = editingProduct._id || editingProduct.id;
+      const formData = new FormData();
+      formData.append("image", file);
+
+      try {
+        const res = await apiClient.post(`/products/${pId}/images`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        // Reload list of images from updated product response
+        const updatedProd = normalizeProduct(res.data);
+        const nextImages = updatedProd.images || [];
+        setFormImages(nextImages);
+        if (nextImages.length > 0) {
+          setFormImageUrl(nextImages[0]);
+        }
+        toast.success("Image uploaded successfully to Cloudinary.");
+      } catch (err) {
+        console.error("Image upload failed:", err);
+        toast.error("Failed to upload image to Cloudinary.");
+      } finally {
+        setUploadingImage(false);
+      }
+    } else {
+      // For new product, stage file for submit upload
+      setSelectedFile(file);
+      toast.info("Image staged. It will be uploaded to Cloudinary once product is saved.");
     }
   };
 
   // Handle Form Submit (Add or Edit)
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formName || !formCategory || !formPrice) {
+    if (!formName.trim() || !formCategory || !formPrice) {
       toast.warning("Please fill in required fields.");
+      return;
+    }
+
+    const priceNum = parseFloat(formPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      toast.warning("Price must be a valid positive number.");
+      return;
+    }
+
+    const stockNum = parseInt(formStock, 10);
+    if (isNaN(stockNum) || stockNum < 0) {
+      toast.warning("Stock count cannot be negative.");
+      return;
+    }
+
+    const invalidSizes = Object.values(formSizes).some((qty) => qty < 0);
+    if (invalidSizes) {
+      toast.warning("Sizing quantities cannot be negative.");
+      return;
+    }
+
+    if (formImages.length === 0 && !selectedFile) {
+      toast.warning("Please provide at least 1 product image URL or upload a file.");
       return;
     }
 
@@ -151,7 +242,8 @@ export default function ProductsManagement() {
       group: formGroup,
       isActive: formIsActive,
       sizes: formSizes,
-      image: formImageUrl,
+      image: formImageUrl || formImages[0] || "",
+      images: formImages,
     });
 
     try {
@@ -162,7 +254,7 @@ export default function ProductsManagement() {
         const pId = editingProduct._id || editingProduct.id;
         const res = await apiClient.patch(`/products/${pId}`, payload);
         savedProduct = res.data;
-        toast.success("Product updated successfully.");
+        toast.success("Product details updated successfully.");
       } else {
         // Create new
         const res = await apiClient.post("/products", payload);
@@ -170,7 +262,7 @@ export default function ProductsManagement() {
         toast.success("Product created successfully.");
       }
 
-      // Handle Image File upload if selected
+      // Handle staged file upload if selected (primarily for new product)
       if (selectedFile && savedProduct) {
         setUploadingImage(true);
         const pId = savedProduct._id || savedProduct.id;
@@ -181,10 +273,10 @@ export default function ProductsManagement() {
           await apiClient.post(`/products/${pId}/images`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
           });
-          toast.success("Product image uploaded successfully.");
+          toast.success("Product image uploaded to Cloudinary successfully.");
         } catch (imgErr) {
-          console.error("Image upload failed:", imgErr);
-          toast.error("Image file upload failed (URL saved instead).");
+          console.error("Staged file upload failed:", imgErr);
+          toast.error("Staged file upload failed (product details saved).");
         }
       }
 
@@ -197,6 +289,7 @@ export default function ProductsManagement() {
       );
     } finally {
       setUploadingImage(false);
+      setSelectedFile(null);
     }
   };
 
@@ -277,6 +370,33 @@ export default function ProductsManagement() {
     if (filterMode === "archived") return matchesSearch && p.isActive === false;
     if (filterMode === "low-stock") return matchesSearch && isLowStock;
     return matchesSearch;
+  });
+
+  const getAvailableSizes = () => {
+    if (formProductType === "Shoes") {
+      return SIZE_OPTIONS.Shoes || [];
+    }
+    if (formProductType === "Bags") {
+      return SIZE_OPTIONS.Bags || [];
+    }
+    if (formProductType === "Clothes") {
+      if (formGroup === "Girls" || formGroup === "Boys") {
+        return SIZE_OPTIONS.Clothes?.Children || [];
+      }
+      return SIZE_OPTIONS.Clothes?.Adult || [];
+    }
+    return [];
+  };
+
+  const availableSizes = getAvailableSizes();
+
+  const filteredCategoriesForProduct = categories.filter((cat) => {
+    if (!formProductType) return false;
+    if (cat.productType?.toLowerCase() !== formProductType.toLowerCase()) return false;
+    if (formProductType === "Bags") return true;
+    const catGroup = cat.group === null || cat.group === "None" ? "" : cat.group.toLowerCase();
+    const fGroup = formGroup === "None" || !formGroup ? "" : formGroup.toLowerCase();
+    return catGroup === fGroup;
   });
 
   return (
@@ -561,12 +681,13 @@ export default function ProductsManagement() {
                     required
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2.5 text-xs text-white"
+                    disabled={!formProductType}
+                    className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2.5 text-xs text-white disabled:opacity-50"
                   >
                     <option value="" disabled>
-                      Select Category
+                      {!formProductType ? "Select Product Type First" : "Select Category"}
                     </option>
-                    {categories.map((cat) => (
+                    {filteredCategoriesForProduct.map((cat) => (
                       <option key={cat._id || cat.id} value={cat._id || cat.id}>
                         {cat.name}
                       </option>
@@ -595,15 +716,25 @@ export default function ProductsManagement() {
                 {/* Product Type */}
                 <div>
                   <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
-                    Product Type
+                    Product Type *
                   </label>
-                  <input
-                    type="text"
+                  <select
+                    required
                     value={formProductType}
-                    onChange={(e) => setFormProductType(e.target.value)}
-                    placeholder="e.g., Dress, Accessory"
-                    className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2 text-xs text-white"
-                  />
+                    onChange={(e) => {
+                      setFormProductType(e.target.value);
+                      setFormGroup("");
+                      setFormCategory("");
+                      setFormSizes({});
+                      setFormStock(0);
+                    }}
+                    className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2.5 text-xs text-white"
+                  >
+                    <option value="">Select Type</option>
+                    <option value="Shoes">Shoes</option>
+                    <option value="Clothes">Clothes</option>
+                    <option value="Bags">Bags</option>
+                  </select>
                 </div>
 
                 {/* Group */}
@@ -611,13 +742,32 @@ export default function ProductsManagement() {
                   <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
                     Catalog Group
                   </label>
-                  <input
-                    type="text"
-                    value={formGroup}
-                    onChange={(e) => setFormGroup(e.target.value)}
-                    placeholder="e.g., Autumn 2026"
-                    className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2 text-xs text-white"
-                  />
+                  <select
+                    value={formGroup || ""}
+                    onChange={(e) => {
+                      setFormGroup(e.target.value);
+                      setFormCategory("");
+                    }}
+                    disabled={!formProductType || formProductType === "Bags"}
+                    className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2.5 text-xs text-white disabled:opacity-50"
+                  >
+                    <option value="">None</option>
+                    {formProductType === "Shoes" && (
+                      <>
+                        <option value="Men">Men</option>
+                        <option value="Ladies">Ladies</option>
+                        <option value="Kids">Kids</option>
+                      </>
+                    )}
+                    {formProductType === "Clothes" && (
+                      <>
+                        <option value="Women">Women</option>
+                        <option value="Girls">Girls</option>
+                        <option value="Men">Men</option>
+                        <option value="Boys">Boys</option>
+                      </>
+                    )}
+                  </select>
                 </div>
               </div>
 
@@ -635,34 +785,105 @@ export default function ProductsManagement() {
                 />
               </div>
 
-              {/* Image Settings */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 border-t border-gold/10">
-                {/* Image URL */}
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
-                    Product Image URL
-                  </label>
-                  <input
-                    type="text"
-                    value={formImageUrl}
-                    onChange={(e) => setFormImageUrl(e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-2 text-xs text-white"
-                  />
-                </div>
+              {/* Images Manager */}
+              <div className="pt-4 border-t border-gold/10 space-y-4">
+                <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 font-semibold">
+                  Product Images (Max 5, Min 1)
+                </label>
 
-                {/* Image File Upload */}
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
-                    Upload Local File Asset
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setSelectedFile(e.target.files[0])}
-                    className="w-full bg-dark-base border border-gold/15 rounded text-xs text-white file:bg-gold/15 file:text-gold file:border-none file:px-3 file:py-1.5 file:rounded file:mr-3 file:cursor-pointer"
-                  />
-                </div>
+                {/* Existing Images Grid */}
+                {formImages.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                    {formImages.map((imgUrl, index) => (
+                      <div
+                        key={index}
+                        className="relative w-full h-24 rounded border border-gold/15 bg-dark-base overflow-hidden group"
+                      >
+                        <img
+                          src={imgUrl}
+                          alt={`product-${index}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {formImages.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const confirmDel = window.confirm(
+                                `WARNING: Are you sure you want to remove this product image?\n\nThis will remove it from the product's image assets on save.\n\nDo you want to proceed?`
+                              );
+                              if (confirmDel) {
+                                setFormImages((prev) => prev.filter((_, i) => i !== index));
+                              }
+                            }}
+                            className="absolute inset-0 bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300 text-xs font-semibold"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add new image controls */}
+                {formImages.length < 5 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Add URL */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[9px] uppercase tracking-widest text-warm-ivory/40">
+                        Add Image URL
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          id="new-image-url"
+                          placeholder="https://example.com/image.jpg"
+                          className="flex-1 bg-dark-base border border-gold/15 focus:border-gold rounded px-3 py-1.5 text-xs text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const inputEl = document.getElementById("new-image-url");
+                            const url = inputEl ? inputEl.value.trim() : "";
+                            if (!url) return;
+                            if (formImages.length >= 5) {
+                              toast.warning("Maximum of 5 images allowed.");
+                              return;
+                            }
+                            setFormImages((prev) => [...prev, url]);
+                            if (inputEl) inputEl.value = "";
+                          }}
+                          className="bg-gold text-dark-base px-3 py-1.5 rounded text-[10px] font-semibold uppercase tracking-wider hover:bg-gold-light"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Upload Local File */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[9px] uppercase tracking-widest text-warm-ivory/40">
+                        Upload Local File
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        disabled={uploadingImage}
+                        className="w-full bg-dark-base border border-gold/15 rounded text-xs text-white file:bg-gold/15 file:text-gold file:border-none file:px-3 file:py-1.5 file:rounded file:mr-3 file:cursor-pointer disabled:opacity-50"
+                      />
+                      {selectedFile && (
+                        <p className="text-[9px] text-gold mt-1">
+                          Staged file: <strong className="text-white">{selectedFile.name}</strong>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-amber-500 italic bg-amber-500/5 p-2 rounded border border-amber-500/10">
+                    Maximum limit of 5 product images reached. Remove an image to add or upload another.
+                  </p>
+                )}
               </div>
 
               {/* Sizing & Stock levels */}
@@ -671,37 +892,67 @@ export default function ProductsManagement() {
                   Sizing stock inventory levels
                 </label>
 
-                <div className="grid grid-cols-4 gap-4">
-                  {["S", "M", "L", "XL"].map((size) => (
-                    <div
-                      key={size}
-                      className="bg-dark-base/50 p-3 border border-gold/10 rounded-lg text-center"
-                    >
-                      <span className="block text-xs font-semibold text-gold mb-1">
-                        {size}
-                      </span>
-                      <input
-                        type="number"
-                        min={0}
-                        value={formSizes[size] || 0}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 0;
-                          setFormSizes((prev) => {
-                            const next = { ...prev, [size]: val };
-                            // Calculate formStock
-                            const nextStock = Object.values(next).reduce(
-                              (a, b) => a + b,
-                              0,
-                            );
-                            setFormStock(nextStock);
-                            return next;
-                          });
-                        }}
-                        className="w-full bg-dark-base border border-gold/10 text-center rounded py-1 text-xs"
-                      />
-                    </div>
-                  ))}
-                </div>
+                {availableSizes.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {availableSizes.map((size) => {
+                      const isChecked = formSizes[size] !== undefined;
+                      return (
+                        <div
+                          key={size}
+                          className={`p-3 border rounded-lg text-center transition ${
+                            isChecked ? "bg-gold/10 border-gold" : "bg-dark-base/50 border-gold/10 opacity-60"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormSizes((prev) => ({ ...prev, [size]: 0 }));
+                                } else {
+                                  setFormSizes((prev) => {
+                                    const next = { ...prev };
+                                    delete next[size];
+                                    const nextStock = Object.values(next).reduce((a, b) => a + b, 0);
+                                    setFormStock(nextStock);
+                                    return next;
+                                  });
+                                }
+                              }}
+                              className="w-3.5 h-3.5 accent-gold cursor-pointer"
+                            />
+                            <span className="text-xs font-semibold text-gold uppercase">
+                              {size}
+                            </span>
+                          </div>
+                          {isChecked && (
+                            <input
+                              type="number"
+                              min={0}
+                              required
+                              value={formSizes[size] ?? 0}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || 0;
+                                setFormSizes((prev) => {
+                                  const next = { ...prev, [size]: val };
+                                  const nextStock = Object.values(next).reduce((a, b) => a + b, 0);
+                                  setFormStock(nextStock);
+                                  return next;
+                                });
+                              }}
+                              className="w-full bg-dark-base border border-gold/10 text-center rounded py-1 text-xs text-white"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-warm-ivory/40 italic">
+                    Select a Product Type to configure sizing options.
+                  </p>
+                )}
               </div>
 
               {/* Status checkboxes */}
