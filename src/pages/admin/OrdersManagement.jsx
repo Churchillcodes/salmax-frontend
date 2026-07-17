@@ -13,7 +13,12 @@ import {
 } from "lucide-react";
 import apiClient from "../../api/apiClient";
 import { toast } from "react-toastify";
-import { normalizeOrder, normalizeProduct, normalizeCategory, SIZE_OPTIONS } from "../../utils/apiData";
+import {
+  normalizeOrder,
+  normalizeProduct,
+  normalizeCategory,
+  SIZE_OPTIONS,
+} from "../../utils/apiData";
 
 export default function OrdersManagement() {
   const [orders, setOrders] = useState([]);
@@ -23,12 +28,12 @@ export default function OrdersManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [viewingOrder, setViewingOrder] = useState(null);
-  
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
-  
+
   // Structured order creation flow states
   const [createProductType, setCreateProductType] = useState("");
   const [createGroup, setCreateGroup] = useState("");
@@ -47,7 +52,9 @@ export default function OrdersManagement() {
       ]);
       setOrders((ordersRes.data || []).map((o) => normalizeOrder(o)));
       setProducts((productsRes.data || []).map((p) => normalizeProduct(p)));
-      setCategories((categoriesRes.data || []).map((c) => normalizeCategory(c)));
+      setCategories(
+        (categoriesRes.data || []).map((c) => normalizeCategory(c)),
+      );
     } catch (e) {
       console.error("Failed to load orders, products or categories data:", e);
       toast.error("Failed to retrieve inventory or orders data.");
@@ -69,7 +76,9 @@ export default function OrdersManagement() {
 
     // Check if order is already in a final state
     if (currentStatus === "delivered" || currentStatus === "cancelled") {
-      toast.warning(`Order is in a final status "${order.status}" and cannot be updated.`);
+      toast.warning(
+        `Order is in a final status "${order.status}" and cannot be updated.`,
+      );
       return;
     }
 
@@ -84,7 +93,9 @@ export default function OrdersManagement() {
     }
 
     if (!isValid) {
-      toast.error(`Cannot change status from "${order.status}" to "${nextStatus}". Please follow the strict flow: Pending -> Confirmed -> Ready -> Delivered.`);
+      toast.error(
+        `Cannot change status from "${order.status}" to "${nextStatus}". Please follow the strict flow: Pending -> Confirmed -> Ready -> Delivered.`,
+      );
       return;
     }
 
@@ -108,7 +119,9 @@ export default function OrdersManagement() {
       }
     } catch (err) {
       console.error("Status change error:", err);
-      toast.error(err.response?.data?.message || "Could not modify order status.");
+      toast.error(
+        err.response?.data?.message || "Could not modify order status.",
+      );
     }
   };
 
@@ -155,7 +168,9 @@ export default function OrdersManagement() {
       return;
     }
     if (createQuantity > availableStock) {
-      toast.error(`Requested quantity (${createQuantity}) exceeds available stock (${availableStock}) for size ${createSize}.`);
+      toast.error(
+        `Requested quantity (${createQuantity}) exceeds available stock (${availableStock}) for size ${createSize}.`,
+      );
       return;
     }
 
@@ -209,8 +224,13 @@ export default function OrdersManagement() {
   const handleCancelOrder = (orderId) => {
     const order = orders.find((o) => (o._id || o.id) === orderId);
     if (!order) return;
-    if (order.status?.toLowerCase() === "delivered" || order.status?.toLowerCase() === "cancelled") {
-      toast.warning(`Order is already in a final status "${order.status}" and cannot be cancelled.`);
+    if (
+      order.status?.toLowerCase() === "delivered" ||
+      order.status?.toLowerCase() === "cancelled"
+    ) {
+      toast.warning(
+        `Order is already in a final status "${order.status}" and cannot be cancelled.`,
+      );
       return;
     }
     if (!window.confirm("Are you sure you want to cancel this order?")) return;
@@ -269,21 +289,26 @@ export default function OrdersManagement() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {["All", "Pending", "Confirmed", "Delivered", "Cancelled"].map(
-            (statusOption) => (
-              <button
-                key={statusOption}
-                onClick={() => setSelectedStatus(statusOption)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition duration-300 border border-gold/5 ${
-                  selectedStatus === statusOption
-                    ? "bg-gold text-dark-base font-semibold"
-                    : "bg-dark-base text-warm-ivory/60 hover:text-gold"
-                }`}
-              >
-                {statusOption}
-              </button>
-            ),
-          )}
+          {[
+            "All",
+            "Pending",
+            "Confirmed",
+            "Ready",
+            "Delivered",
+            "Cancelled",
+          ].map((statusOption) => (
+            <button
+              key={statusOption}
+              onClick={() => setSelectedStatus(statusOption)}
+              className={`px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition duration-300 border border-gold/5 ${
+                selectedStatus === statusOption
+                  ? "bg-gold text-dark-base font-semibold"
+                  : "bg-dark-base text-warm-ivory/60 hover:text-gold"
+              }`}
+            >
+              {statusOption}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -461,217 +486,349 @@ export default function OrdersManagement() {
         </div>
       )}
 
-      {showCreateModal && (() => {
-        // Compute derived selections inside modal
-        const modalSizes = (() => {
-          if (createProductType === "Shoes") return SIZE_OPTIONS.Shoes || [];
-          if (createProductType === "Bags") return SIZE_OPTIONS.Bags || [];
-          if (createProductType === "Clothes") {
-            if (createGroup === "Girls" || createGroup === "Boys") return SIZE_OPTIONS.Clothes?.Children || [];
-            return SIZE_OPTIONS.Clothes?.Adult || [];
-          }
-          return [];
-        })();
+      {showCreateModal &&
+        (() => {
+          // Compute derived selections inside modal
+          const modalSizes = (() => {
+            if (createProductType === "Shoes") return SIZE_OPTIONS.Shoes || [];
+            if (createProductType === "Bags") return SIZE_OPTIONS.Bags || [];
+            if (createProductType === "Clothes") {
+              if (createGroup === "Girls" || createGroup === "Boys")
+                return SIZE_OPTIONS.Clothes?.Children || [];
+              return SIZE_OPTIONS.Clothes?.Adult || [];
+            }
+            return [];
+          })();
 
-        const modalCategories = categories.filter((cat) => {
-          if (!createProductType) return false;
-          if (cat.productType?.toLowerCase() !== createProductType.toLowerCase()) return false;
-          if (createProductType === "Bags") return true;
-          const cg = !cat.group || cat.group === "None" ? "" : cat.group.toLowerCase();
-          const fg = !createGroup || createGroup === "None" ? "" : createGroup.toLowerCase();
-          return cg === fg;
-        });
+          const modalCategories = categories.filter((cat) => {
+            if (!createProductType) return false;
+            if (
+              cat.productType?.toLowerCase() !== createProductType.toLowerCase()
+            )
+              return false;
+            if (createProductType === "Bags") return true;
+            const cg =
+              !cat.group || cat.group === "None" ? "" : cat.group.toLowerCase();
+            const fg =
+              !createGroup || createGroup === "None"
+                ? ""
+                : createGroup.toLowerCase();
+            return cg === fg;
+          });
 
-        const modalProducts = products.filter((p) => {
-          if (!createCategory) return false;
-          const pCatId = typeof p.category === "object" ? (p.category?._id || p.category?.id) : p.category;
-          return pCatId === createCategory;
-        });
+          const modalProducts = products.filter((p) => {
+            if (!createCategory) return false;
+            const pCatId =
+              typeof p.category === "object"
+                ? p.category?._id || p.category?.id
+                : p.category;
+            return pCatId === createCategory;
+          });
 
-        const selectedProductSizes = createProduct
-          ? Object.entries(createProduct.sizes || {}).filter(([, qty]) => qty > 0)
-          : [];
+          const selectedProductSizes = createProduct
+            ? Object.entries(createProduct.sizes || {}).filter(
+                ([, qty]) => qty > 0,
+              )
+            : [];
 
-        const stockForSize = createProduct && createSize
-          ? (createProduct.sizes?.[createSize] || 0)
-          : null;
+          const stockForSize =
+            createProduct && createSize
+              ? createProduct.sizes?.[createSize] || 0
+              : null;
 
-        const orderTotal = createProduct
-          ? Number(createProduct.price || 0) * Number(createQuantity || 1)
-          : 0;
+          const orderTotal = createProduct
+            ? Number(createProduct.price || 0) * Number(createQuantity || 1)
+            : 0;
 
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
-            <div className="w-full max-w-lg bg-dark-charcoal border border-gold/25 rounded-xl overflow-hidden shadow-2xl animate-fade-in text-warm-ivory my-6">
-              <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base">
-                <h3 className="font-serif text-base text-gold font-medium tracking-wide">
-                  Create New Order
-                </h3>
-                <button onClick={() => setShowCreateModal(false)} className="text-warm-ivory/50 hover:text-gold">
-                  <X size={20} />
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateOrder} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
-                {/* Customer Details */}
-                <div className="space-y-1">
-                  <p className="text-[9px] uppercase tracking-widest text-warm-ivory/30 font-semibold">Step 1 — Customer Details</p>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">Customer Name *</label>
-                      <input type="text" required value={customerName} onChange={(e) => setCustomerName(e.target.value)}
-                        className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">Phone Number</label>
-                      <input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)}
-                        className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">Email</label>
-                    <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)}
-                      className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30" />
-                  </div>
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+              <div className="w-full max-w-lg bg-dark-charcoal border border-gold/25 rounded-xl overflow-hidden shadow-2xl animate-fade-in text-warm-ivory my-6">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base">
+                  <h3 className="font-serif text-base text-gold font-medium tracking-wide">
+                    Create New Order
+                  </h3>
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="text-warm-ivory/50 hover:text-gold"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
 
-                {/* Product Selection Flow */}
-                <div className="pt-4 border-t border-gold/10 space-y-4">
-                  <p className="text-[9px] uppercase tracking-widest text-warm-ivory/30 font-semibold">Step 2 — Select Product</p>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {/* Product Type */}
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">Product Type *</label>
-                      <select value={createProductType}
-                        onChange={(e) => { setCreateProductType(e.target.value); setCreateGroup(""); setCreateCategory(""); setCreateProduct(null); setCreateSize(""); }}
-                        className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30">
-                        <option value="">Select Type</option>
-                        <option value="Shoes">Shoes</option>
-                        <option value="Clothes">Clothes</option>
-                        <option value="Bags">Bags</option>
-                      </select>
-                    </div>
-
-                    {/* Group */}
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">Group</label>
-                      <select value={createGroup}
-                        disabled={!createProductType || createProductType === "Bags"}
-                        onChange={(e) => { setCreateGroup(e.target.value); setCreateCategory(""); setCreateProduct(null); setCreateSize(""); }}
-                        className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30 disabled:opacity-50">
-                        <option value="">None</option>
-                        {createProductType === "Shoes" && (<><option value="Men">Men</option><option value="Ladies">Ladies</option><option value="Kids">Kids</option></>)}
-                        {createProductType === "Clothes" && (<><option value="Women">Women</option><option value="Girls">Girls</option><option value="Men">Men</option><option value="Boys">Boys</option></>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Category */}
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">Category *</label>
-                    <select value={createCategory}
-                      disabled={!createProductType}
-                      onChange={(e) => { setCreateCategory(e.target.value); setCreateProduct(null); setCreateSize(""); }}
-                      className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30 disabled:opacity-50">
-                      <option value="">{!createProductType ? "Select product type first" : "Select Category"}</option>
-                      {modalCategories.map((cat) => (
-                        <option key={cat._id || cat.id} value={cat._id || cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Product */}
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">Product *</label>
-                    <select value={createProduct?._id || createProduct?.id || ""}
-                      disabled={!createCategory}
-                      onChange={(e) => {
-                        const p = modalProducts.find((pr) => (pr._id || pr.id) === e.target.value);
-                        setCreateProduct(p || null);
-                        setCreateSize("");
-                      }}
-                      className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30 disabled:opacity-50">
-                      <option value="">{!createCategory ? "Select category first" : "Select Product"}</option>
-                      {modalProducts.map((p) => (
-                        <option key={p._id || p.id} value={p._id || p.id}>
-                          {p.name} — KES {(p.price || 0).toLocaleString()}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Size selection & stock display */}
-                  {createProduct && (
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">Size & Available Stock *</label>
-                      {selectedProductSizes.length > 0 ? (
-                        <div className="grid grid-cols-3 gap-2">
-                          {selectedProductSizes.map(([sz, qty]) => (
-                            <button key={sz} type="button"
-                              onClick={() => setCreateSize(sz)}
-                              className={`p-2 rounded border text-xs text-center transition ${
-                                createSize === sz
-                                  ? "bg-gold text-dark-base border-gold font-semibold"
-                                  : qty <= 3
-                                    ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                                    : "bg-dark-base border-gold/20 text-warm-ivory hover:border-gold"
-                              }`}>
-                              <span className="font-bold block">{sz}</span>
-                              <span className="text-[9px] opacity-70">{qty} in stock</span>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-rose-400 italic">This product has no available stock in any size.</p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Stock warning */}
-                  {stockForSize !== null && stockForSize <= 3 && stockForSize > 0 && (
-                    <p className="text-[10px] text-amber-400 bg-amber-400/5 border border-amber-400/20 rounded px-3 py-2">
-                      ⚠ Low stock: Only {stockForSize} units left in size {createSize}.
+                <form
+                  onSubmit={handleCreateOrder}
+                  className="p-6 space-y-5 max-h-[80vh] overflow-y-auto"
+                >
+                  {/* Customer Details */}
+                  <div className="space-y-1">
+                    <p className="text-[9px] uppercase tracking-widest text-warm-ivory/30 font-semibold">
+                      Step 1 — Customer Details
                     </p>
-                  )}
-
-                  {/* Quantity */}
-                  {createProduct && createSize && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
+                          Customer Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
+                          Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30"
+                        />
+                      </div>
+                    </div>
                     <div>
                       <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
-                        Quantity * (Max: {stockForSize})
+                        Email
                       </label>
-                      <input type="number" min="1" max={stockForSize || 1}
-                        value={createQuantity}
-                        onChange={(e) => setCreateQuantity(Number(e.target.value))}
-                        className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30" />
+                      <input
+                        type="email"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                        className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30"
+                      />
                     </div>
-                  )}
+                  </div>
 
-                  {/* Order Total Preview */}
-                  {createProduct && createSize && (
-                    <div className="bg-dark-base/50 border border-gold/15 rounded-lg p-3 flex justify-between items-center">
-                      <span className="text-[10px] uppercase tracking-widest text-warm-ivory/50">Estimated Order Total</span>
-                      <span className="font-serif text-gold font-semibold text-lg">KES {orderTotal.toLocaleString()}</span>
+                  {/* Product Selection Flow */}
+                  <div className="pt-4 border-t border-gold/10 space-y-4">
+                    <p className="text-[9px] uppercase tracking-widest text-warm-ivory/30 font-semibold">
+                      Step 2 — Select Product
+                    </p>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {/* Product Type */}
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
+                          Product Type *
+                        </label>
+                        <select
+                          value={createProductType}
+                          onChange={(e) => {
+                            setCreateProductType(e.target.value);
+                            setCreateGroup("");
+                            setCreateCategory("");
+                            setCreateProduct(null);
+                            setCreateSize("");
+                          }}
+                          className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30"
+                        >
+                          <option value="">Select Type</option>
+                          <option value="Shoes">Shoes</option>
+                          <option value="Clothes">Clothes</option>
+                          <option value="Bags">Bags</option>
+                        </select>
+                      </div>
+
+                      {/* Group */}
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
+                          Group
+                        </label>
+                        <select
+                          value={createGroup}
+                          disabled={
+                            !createProductType || createProductType === "Bags"
+                          }
+                          onChange={(e) => {
+                            setCreateGroup(e.target.value);
+                            setCreateCategory("");
+                            setCreateProduct(null);
+                            setCreateSize("");
+                          }}
+                          className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30 disabled:opacity-50"
+                        >
+                          <option value="">None</option>
+                          {createProductType === "Shoes" && (
+                            <>
+                              <option value="Men">Men</option>
+                              <option value="Ladies">Ladies</option>
+                              <option value="Kids">Kids</option>
+                            </>
+                          )}
+                          {createProductType === "Clothes" && (
+                            <>
+                              <option value="Women">Women</option>
+                              <option value="Girls">Girls</option>
+                              <option value="Men">Men</option>
+                              <option value="Boys">Boys</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
                     </div>
-                  )}
-                </div>
 
-                <div className="flex gap-4 pt-2 border-t border-gold/10">
-                  <button type="button" onClick={() => setShowCreateModal(false)}
-                    className="flex-1 bg-dark-base border border-gold/25 text-warm-ivory/70 py-2.5 rounded text-xs uppercase tracking-widest hover:bg-gold/5">
-                    Cancel
-                  </button>
-                  <button type="submit"
-                    className="flex-1 bg-gold text-dark-base font-semibold py-2.5 rounded text-xs uppercase tracking-widest hover:bg-gold-light gold-glow">
-                    Create Order
-                  </button>
-                </div>
-              </form>
+                    {/* Category */}
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
+                        Category *
+                      </label>
+                      <select
+                        value={createCategory}
+                        disabled={!createProductType}
+                        onChange={(e) => {
+                          setCreateCategory(e.target.value);
+                          setCreateProduct(null);
+                          setCreateSize("");
+                        }}
+                        className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30 disabled:opacity-50"
+                      >
+                        <option value="">
+                          {!createProductType
+                            ? "Select product type first"
+                            : "Select Category"}
+                        </option>
+                        {modalCategories.map((cat) => (
+                          <option
+                            key={cat._id || cat.id}
+                            value={cat._id || cat.id}
+                          >
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Product */}
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
+                        Product *
+                      </label>
+                      <select
+                        value={createProduct?._id || createProduct?.id || ""}
+                        disabled={!createCategory}
+                        onChange={(e) => {
+                          const p = modalProducts.find(
+                            (pr) => (pr._id || pr.id) === e.target.value,
+                          );
+                          setCreateProduct(p || null);
+                          setCreateSize("");
+                        }}
+                        className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30 disabled:opacity-50"
+                      >
+                        <option value="">
+                          {!createCategory
+                            ? "Select category first"
+                            : "Select Product"}
+                        </option>
+                        {modalProducts.map((p) => (
+                          <option key={p._id || p.id} value={p._id || p.id}>
+                            {p.name} — KES {(p.price || 0).toLocaleString()}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Size selection & stock display */}
+                    {createProduct && (
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
+                          Size & Available Stock *
+                        </label>
+                        {selectedProductSizes.length > 0 ? (
+                          <div className="grid grid-cols-3 gap-2">
+                            {selectedProductSizes.map(([sz, qty]) => (
+                              <button
+                                key={sz}
+                                type="button"
+                                onClick={() => setCreateSize(sz)}
+                                className={`p-2 rounded border text-xs text-center transition ${
+                                  createSize === sz
+                                    ? "bg-gold text-dark-base border-gold font-semibold"
+                                    : qty <= 3
+                                      ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                                      : "bg-dark-base border-gold/20 text-warm-ivory hover:border-gold"
+                                }`}
+                              >
+                                <span className="font-bold block">{sz}</span>
+                                <span className="text-[9px] opacity-70">
+                                  {qty} in stock
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-rose-400 italic">
+                            This product has no available stock in any size.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Stock warning */}
+                    {stockForSize !== null &&
+                      stockForSize <= 3 &&
+                      stockForSize > 0 && (
+                        <p className="text-[10px] text-amber-400 bg-amber-400/5 border border-amber-400/20 rounded px-3 py-2">
+                          ⚠ Low stock: Only {stockForSize} units left in size{" "}
+                          {createSize}.
+                        </p>
+                      )}
+
+                    {/* Quantity */}
+                    {createProduct && createSize && (
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
+                          Quantity * (Max: {stockForSize})
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max={stockForSize || 1}
+                          value={createQuantity}
+                          onChange={(e) =>
+                            setCreateQuantity(Number(e.target.value))
+                          }
+                          className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30"
+                        />
+                      </div>
+                    )}
+
+                    {/* Order Total Preview */}
+                    {createProduct && createSize && (
+                      <div className="bg-dark-base/50 border border-gold/15 rounded-lg p-3 flex justify-between items-center">
+                        <span className="text-[10px] uppercase tracking-widest text-warm-ivory/50">
+                          Estimated Order Total
+                        </span>
+                        <span className="font-serif text-gold font-semibold text-lg">
+                          KES {orderTotal.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-4 pt-2 border-t border-gold/10">
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateModal(false)}
+                      className="flex-1 bg-dark-base border border-gold/25 text-warm-ivory/70 py-2.5 rounded text-xs uppercase tracking-widest hover:bg-gold/5"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-gold text-dark-base font-semibold py-2.5 rounded text-xs uppercase tracking-widest hover:bg-gold-light gold-glow"
+                    >
+                      Create Order
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
       {viewingOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
@@ -790,36 +947,51 @@ export default function OrdersManagement() {
               {(() => {
                 const vStatus = (viewingOrder.status || "").toLowerCase();
                 const vId = viewingOrder._id || viewingOrder.id;
-                const isFinal = vStatus === "delivered" || vStatus === "cancelled";
+                const isFinal =
+                  vStatus === "delivered" || vStatus === "cancelled";
                 return (
                   <div className="pt-4 border-t border-gold/10 space-y-3">
-                    <p className="text-[10px] uppercase tracking-widest text-warm-ivory/40 font-semibold">Update Order Status</p>
+                    <p className="text-[10px] uppercase tracking-widest text-warm-ivory/40 font-semibold">
+                      Update Order Status
+                    </p>
                     {isFinal ? (
                       <p className="text-xs text-warm-ivory/40 italic bg-dark-base/30 border border-gold/10 rounded px-3 py-2">
-                        This order is in a final status (<span className="text-gold font-semibold capitalize">{viewingOrder.status}</span>) and cannot be updated further.
+                        This order is in a final status (
+                        <span className="text-gold font-semibold capitalize">
+                          {viewingOrder.status}
+                        </span>
+                        ) and cannot be updated further.
                       </p>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {vStatus === "pending" && (
-                          <button onClick={() => handleUpdateStatus(vId, "Confirmed")}
-                            className="flex-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 py-2 rounded text-xs uppercase tracking-widest hover:bg-emerald-500/20 transition">
+                          <button
+                            onClick={() => handleUpdateStatus(vId, "Confirmed")}
+                            className="flex-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 py-2 rounded text-xs uppercase tracking-widest hover:bg-emerald-500/20 transition"
+                          >
                             ✓ Confirm Order
                           </button>
                         )}
                         {vStatus === "confirmed" && (
-                          <button onClick={() => handleUpdateStatus(vId, "Ready")}
-                            className="flex-1 bg-teal-500/10 text-teal-400 border border-teal-500/20 py-2 rounded text-xs uppercase tracking-widest hover:bg-teal-500/20 transition">
+                          <button
+                            onClick={() => handleUpdateStatus(vId, "Ready")}
+                            className="flex-1 bg-teal-500/10 text-teal-400 border border-teal-500/20 py-2 rounded text-xs uppercase tracking-widest hover:bg-teal-500/20 transition"
+                          >
                             ✓ Mark as Ready
                           </button>
                         )}
                         {vStatus === "ready" && (
-                          <button onClick={() => handleUpdateStatus(vId, "Delivered")}
-                            className="flex-1 bg-green-500/10 text-green-400 border border-green-500/20 py-2 rounded text-xs uppercase tracking-widest hover:bg-green-500/20 transition">
+                          <button
+                            onClick={() => handleUpdateStatus(vId, "Delivered")}
+                            className="flex-1 bg-green-500/10 text-green-400 border border-green-500/20 py-2 rounded text-xs uppercase tracking-widest hover:bg-green-500/20 transition"
+                          >
                             ✓ Mark as Delivered
                           </button>
                         )}
-                        <button onClick={() => handleCancelOrder(vId)}
-                          className="flex-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 py-2 rounded text-xs uppercase tracking-widest hover:bg-rose-500/20 transition">
+                        <button
+                          onClick={() => handleCancelOrder(vId)}
+                          className="flex-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 py-2 rounded text-xs uppercase tracking-widest hover:bg-rose-500/20 transition"
+                        >
                           ✕ Cancel Order
                         </button>
                       </div>
