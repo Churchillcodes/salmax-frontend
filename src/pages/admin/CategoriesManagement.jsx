@@ -27,8 +27,16 @@ export default function CategoriesManagement() {
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get("/categories");
-      setCategories(response.data || []);
+      const [activeRes, archivedRes] = await Promise.all([
+        apiClient.get("/categories"),
+        apiClient.get("/categories/archived").catch(() => ({ data: [] })),
+      ]);
+      const activeList = activeRes.data || [];
+      const archivedList = (archivedRes.data || []).map((c) => ({
+        ...c,
+        isActive: false,
+      }));
+      setCategories([...activeList, ...archivedList]);
     } catch (e) {
       console.error("Failed to load categories:", e);
       toast.error("Failed to retrieve categories catalogue.");
@@ -71,7 +79,7 @@ export default function CategoriesManagement() {
     const nextActive = cat.isActive === false;
     if (!nextActive) {
       const confirmArchive = window.confirm(
-        `WARNING: You are about to archive the category "${cat.name}".\n\nThis will hide this category from storefront filters, and any active products linked to this category may display empty categories.\n\nDo you want to proceed?`
+        `WARNING: You are about to archive the category "${cat.name}".\n\nThis will hide this category from storefront filters, and any active products linked to this category may display empty categories.\n\nDo you want to proceed?`,
       );
       if (!confirmArchive) return;
     }
@@ -93,7 +101,7 @@ export default function CategoriesManagement() {
   const handleDeleteCategory = async (catId) => {
     if (
       !window.confirm(
-        "WARNING: You are about to permanently DELETE this category.\n\nThis action cannot be undone. Products linked to this category will display empty categories.\n\nDo you want to proceed?"
+        "WARNING: You are about to permanently DELETE this category.\n\nThis action cannot be undone. Products linked to this category will display empty categories.\n\nDo you want to proceed?",
       )
     ) {
       return;
