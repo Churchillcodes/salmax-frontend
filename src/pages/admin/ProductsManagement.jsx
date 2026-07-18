@@ -272,12 +272,12 @@ export default function ProductsManagement() {
         // Edit existing
         const pId = editingProduct._id || editingProduct.id;
         const res = await apiClient.patch(`/products/${pId}`, payload);
-        savedProduct = res.data;
+        savedProduct = res.data.updatedProduct;
         toast.success("Product details updated successfully.");
       } else {
         // Create new
         const res = await apiClient.post("/products", payload);
-        savedProduct = res.data;
+        savedProduct = res.data.newProduct;
         toast.success("Product created successfully.");
       }
 
