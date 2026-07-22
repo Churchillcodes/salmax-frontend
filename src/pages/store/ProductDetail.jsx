@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
+  ChevronRight,
   ShoppingBag,
   Truck,
-  Calendar,
-  Tag,
+  BadgeCheck,
   Layers,
-  RefreshCw,
 } from "lucide-react";
 import apiClient from "../../api/apiClient";
 import ProductCard from "../../components/store/ProductCard";
@@ -20,7 +20,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
-  const [activeImage, setActiveImage] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showInquiry, setShowInquiry] = useState(false);
 
@@ -28,16 +28,11 @@ export default function ProductDetail() {
     const fetchProductDetails = async () => {
       setLoading(true);
       try {
-        // Fetch detailed product
         const response = await apiClient.get(`/products/${id}`);
         const normalizedProduct = normalizeProduct(response.data);
         setProduct(normalizedProduct);
+        setActiveIndex(0);
 
-        const imagesList = normalizedProduct.images || [];
-        const initialImage = normalizedProduct.image || imagesList[0] || "";
-        setActiveImage(initialImage);
-
-        // Fetch related products (same category)
         try {
           const allProductsRes = await apiClient.get("/products");
           const catId =
@@ -96,10 +91,26 @@ export default function ProductDetail() {
     product.stock === 0 ||
     (hasSizes && Object.values(product.sizes).every((qty) => qty === 0));
 
+  const goToPrev = () =>
+    setActiveIndex((prev) => (prev - 1 + images.length) % images.length);
+  const goToNext = () => setActiveIndex((prev) => (prev + 1) % images.length);
+
+  const pageTitle = `${product.name} | Salmax Suppliers`;
+  const pageDescription =
+    product.description ||
+    `Shop ${product.name} at Salmax Suppliers — premium boutique quality, curated and ready to own.`;
+
   return (
     <div className="bg-dark-base min-h-screen text-warm-ivory py-12 font-sans">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription.slice(0, 160)} />
+        {images[0] && <meta property="og:image" content={images[0]} />}
+        <meta property="og:title" content={pageTitle} />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
+
       <div className="max-w-7xl mx-auto px-6">
-        {/* Back Link */}
         <Link
           to="/shop"
           className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-gold hover:text-gold-light transition duration-300 mb-8"
@@ -108,38 +119,68 @@ export default function ProductDetail() {
           Back to Catalogue
         </Link>
 
-        {/* Product Details Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 mb-20">
-          {/* Product Gallery (Left side - Columns 1-7) */}
+          {/* Product Gallery */}
           <div className="lg:col-span-7 space-y-4">
-            <div className="aspect-[4/5] bg-dark-charcoal/50 border border-gold/10 rounded-xl overflow-hidden relative flex items-center justify-center">
-              {activeImage ? (
+            <div className="relative bg-dark-charcoal/50 border border-gold/10 rounded-xl overflow-hidden flex items-center justify-center h-[380px] sm:h-[460px] md:h-[540px]">
+              {images.length > 0 ? (
                 <img
-                  src={activeImage}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition duration-500"
+                  src={images[activeIndex]}
+                  alt={`${product.name} — image ${activeIndex + 1}`}
+                  className="w-full h-full object-contain p-4"
                 />
               ) : (
                 <span className="font-serif italic text-gold/30">
                   Collection Item
                 </span>
               )}
+
               {isOutOfStock && (
-                <div className="absolute top-4 left-4 bg-red-500 text-white text-xs uppercase font-bold tracking-widest px-3 py-1.5 rounded">
+                <div className="absolute top-4 left-4 bg-red-500 text-white text-xs uppercase font-bold tracking-widest px-3 py-1.5 rounded z-10">
                   Sold Out
                 </div>
               )}
+
+              {images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={goToPrev}
+                    aria-label="Previous image"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-dark-base/70 border border-gold/20 text-gold flex items-center justify-center hover:bg-gold hover:text-dark-base transition duration-300 backdrop-blur-sm"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goToNext}
+                    aria-label="Next image"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-dark-base/70 border border-gold/20 text-gold flex items-center justify-center hover:bg-gold hover:text-dark-base transition duration-300 backdrop-blur-sm"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {images.map((_, idx) => (
+                      <span
+                        key={idx}
+                        className={`w-1.5 h-1.5 rounded-full transition ${
+                          idx === activeIndex ? "bg-gold w-4" : "bg-white/30"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Thumbnail Carousel */}
             {images.length > 1 && (
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {images.map((imgUrl, index) => (
                   <button
                     key={index}
-                    onClick={() => setActiveImage(imgUrl)}
+                    onClick={() => setActiveIndex(index)}
                     className={`w-20 h-20 rounded-lg overflow-hidden border shrink-0 premium-transition bg-dark-charcoal/50 ${
-                      activeImage === imgUrl
+                      activeIndex === index
                         ? "border-gold"
                         : "border-gold/10 hover:border-gold/40"
                     }`}
@@ -155,10 +196,9 @@ export default function ProductDetail() {
             )}
           </div>
 
-          {/* Product Info (Right side - Columns 8-12) */}
+          {/* Product Info */}
           <div className="lg:col-span-5 flex flex-col justify-between">
             <div className="space-y-6">
-              {/* Category, Type & Tag Details */}
               <div className="flex flex-wrap gap-2 items-center text-xs tracking-widest uppercase">
                 {product.category && (
                   <span className="text-gold font-medium">
@@ -179,19 +219,16 @@ export default function ProductDetail() {
                 )}
               </div>
 
-              {/* Title */}
               <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-light text-white tracking-wide leading-tight">
                 {product.name}
               </h1>
 
-              {/* Price */}
               <div className="font-serif text-2xl text-gold border-b border-gold/10 pb-5">
                 {product.price
                   ? `KES ${product.price.toLocaleString()}`
                   : "Price on request"}
               </div>
 
-              {/* Description */}
               <div className="space-y-3 text-sm font-light text-warm-ivory/70 leading-relaxed">
                 <h3 className="text-xs uppercase tracking-widest text-white/40 font-semibold font-sans">
                   Description
@@ -202,7 +239,6 @@ export default function ProductDetail() {
                 </p>
               </div>
 
-              {/* Size & Stock Information */}
               <div className="space-y-4 pt-4 border-t border-gold/5">
                 <h3 className="text-xs uppercase tracking-widest text-white/40 font-semibold">
                   Available Sizes & Stock
@@ -234,13 +270,12 @@ export default function ProductDetail() {
                     <span>
                       {product.stock > 0
                         ? `${product.stock} items remaining in boutique stock`
-                        : "Out of stock (Available on custom back-order inquiry)"}
+                        : "Currently out of stock — inquire for restock updates"}
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Service Highlights */}
               <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gold/5 text-xs font-light text-warm-ivory/50">
                 <div className="flex items-start gap-2.5">
                   <Truck size={16} className="text-gold shrink-0 mt-0.5" />
@@ -252,18 +287,19 @@ export default function ProductDetail() {
                   </div>
                 </div>
                 <div className="flex items-start gap-2.5">
-                  <Calendar size={16} className="text-gold shrink-0 mt-0.5" />
+                  <BadgeCheck size={16} className="text-gold shrink-0 mt-0.5" />
                   <div>
                     <h4 className="font-semibold text-white/80">
-                      Tailored Orders
+                      Quality Checked
                     </h4>
-                    <p className="mt-0.5">Custom requests supported.</p>
+                    <p className="mt-0.5">
+                      Every piece inspected before dispatch.
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* CTA Button */}
             <div className="mt-10 lg:mt-6">
               <button
                 onClick={() => setShowInquiry(true)}
@@ -279,7 +315,6 @@ export default function ProductDetail() {
           </div>
         </div>
 
-        {/* Related Products Section */}
         {relatedProducts.length > 0 && (
           <div className="border-t border-gold/10 pt-16">
             <h2 className="font-serif text-2xl md:text-3xl font-light text-white tracking-wide mb-8">
@@ -294,7 +329,6 @@ export default function ProductDetail() {
         )}
       </div>
 
-      {/* Inquiry Modal */}
       {showInquiry && (
         <InquiryModal product={product} onClose={() => setShowInquiry(false)} />
       )}

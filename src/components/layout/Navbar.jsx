@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { Menu, X, User, ShoppingBag, Shield } from 'lucide-react';
+import React, { useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { Menu, X, User, ShoppingBag, Shield } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
@@ -10,25 +10,26 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/');
+    navigate("/");
   };
 
   const navLinks = [
-    { path: '/', label: 'Home' },
-    { path: '/shop', label: 'Catalogue' },
-    { path: '/about', label: 'Our Story' },
-    { path: '/contact', label: 'Contact' },
+    { path: "/", label: "Home" },
+    { path: "/shop", label: "Catalogue" },
+    { path: "/about", label: "Our Story" },
+    { path: "/contact", label: "Contact" },
   ];
 
   return (
-    <nav className="bg-dark-base/95 backdrop-blur-md border-b border-gold/20 text-white sticky top-0 z-50 font-sans px-6 py-4">
+    <nav className="bg-dark-base/95 backdrop-blur-md border-b border-gold/20 text-white sticky top-0 z-50 font-sans px-6 py-3">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         {/* Logo */}
-        <Link to="/" className="flex flex-col items-start">
-          <span className="font-serif text-2xl font-bold tracking-widest text-gold leading-none hover:text-gold-light transition duration-300">
-            SALMAX
-          </span>
-          <span className="text-[9px] uppercase tracking-[0.25em] text-white/50 leading-none mt-1">SUPPLIERS</span>
+        <Link to="/" className="flex items-center shrink-0">
+          <img
+            src="/brand/salmax-horizontal-color.png"
+            alt="Salmax Suppliers"
+            className="h-11 md:h-12 w-auto object-contain"
+          />
         </Link>
 
         {/* Desktop nav */}
@@ -39,7 +40,9 @@ export default function Navbar() {
               to={link.path}
               className={({ isActive }) =>
                 `text-sm tracking-widest uppercase transition-colors duration-300 ${
-                  isActive ? 'text-gold border-b border-gold pb-1' : 'text-warm-ivory/80 hover:text-gold'
+                  isActive
+                    ? "text-gold border-b border-gold pb-1"
+                    : "text-warm-ivory/80 hover:text-gold"
                 }`
               }
             >
@@ -63,7 +66,9 @@ export default function Navbar() {
               )}
               <div className="text-xs text-warm-ivory/60 flex items-center gap-1.5">
                 <User size={14} className="text-gold" />
-                <span className="max-w-[120px] truncate">{user.name || user.email || user.username}</span>
+                <span className="max-w-[120px] truncate">
+                  {user.name || user.email || user.username}
+                </span>
               </div>
               <button
                 onClick={handleLogout}
@@ -103,7 +108,7 @@ export default function Navbar() {
               onClick={() => setIsOpen(false)}
               className={({ isActive }) =>
                 `text-sm tracking-widest uppercase py-2 transition duration-300 ${
-                  isActive ? 'text-gold' : 'text-warm-ivory/80 hover:text-gold'
+                  isActive ? "text-gold" : "text-warm-ivory/80 hover:text-gold"
                 }`
               }
             >

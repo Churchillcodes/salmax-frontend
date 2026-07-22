@@ -1,11 +1,21 @@
-import React from 'react';
-import { Shield, Sparkles, Handshake, Gem } from 'lucide-react';
+import React from "react";
+import { Helmet } from "react-helmet-async";
+import { Shield, Sparkles, Handshake, Gem } from "lucide-react";
 
 export default function About() {
   return (
     <div className="bg-dark-base min-h-screen text-warm-ivory py-16 font-sans">
+      <Helmet>
+        <title>Our Story | Salmax Suppliers</title>
+        <meta
+          name="description"
+          content="Salmax Suppliers curates premium clothing, footwear, and accessories imported and hand-selected for quality — no custom orders, just the best pieces, ready to own."
+        />
+        <link rel="canonical" href="https://www.salmaxsuppliers.com/about" />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
+
       <div className="max-w-7xl mx-auto px-6">
-        
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
           <span className="text-gold uppercase tracking-[0.25em] text-xs font-semibold">
@@ -15,28 +25,30 @@ export default function About() {
             The Legacy of Salmax
           </h1>
           <p className="text-warm-ivory/60 text-sm font-light leading-relaxed">
-            Curating rare craftsmanship, elegant textiles, and premium boutique supplies with absolute precision and devotion.
+            Curating rare craftsmanship, elegant textiles, and premium boutique
+            supplies with absolute precision and devotion.
           </p>
         </div>
 
         {/* Narrative & Visual Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center mb-24">
-          
           {/* Visual Showcase (Columns 1-6) */}
           <div className="lg:col-span-6 grid grid-cols-12 gap-4 relative">
             <div className="col-span-12 rounded-xl overflow-hidden border border-gold/15 aspect-[16/10] bg-dark-charcoal">
               <img
                 src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200"
                 alt="Salmax boutique shopfloor"
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             {/* Owner profile placeholder */}
             <div className="col-span-6 rounded-xl overflow-hidden border border-gold/15 aspect-square -mt-8 ml-8 bg-dark-charcoal z-10 hidden sm:block">
               <img
                 src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=600"
                 alt="Boutique curation detail"
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -50,13 +62,23 @@ export default function About() {
               A Passion for Pure Craftsmanship and Unparalleled Retail Quality
             </h2>
             <p className="text-warm-ivory/70 text-sm font-light leading-relaxed">
-              Founded on the belief that retail should be an intimate, premium experience, Salmax Suppliers began as a boutique curating custom orders for discerning clients. Over the years, we have expanded our reach, building relationships directly with global designers and fine craftsmen.
+              Founded on the belief that retail should be an intimate, premium
+              experience, Salmax Suppliers began as a boutique curating premium,
+              ready-to-own pieces for discerning clients. Over the years, we
+              have expanded our reach, building relationships directly with
+              global designers and fine craftsmen — importing and hand-selecting
+              only the best of what they produce.
             </p>
             <p className="text-warm-ivory/70 text-sm font-light leading-relaxed">
-              We operate at the intersection of traditional boutique aesthetics and modern convenience. Our digital catalogue allows clients to browse active collections effortlessly, while our WhatsApp inquiry workflow maintains the personal, warm touch of local boutique shopping.
+              We operate at the intersection of traditional boutique aesthetics
+              and modern convenience. Our digital catalogue allows clients to
+              browse active collections effortlessly, while our WhatsApp inquiry
+              workflow maintains the personal, warm touch of local boutique
+              shopping.
             </p>
             <blockquote className="border-l-2 border-gold pl-4 py-1 italic text-gold/90 text-sm font-light">
-              "We don't supply products. We offer curated experiences, premium qualities, and details that inspire beauty."
+              "We don't manufacture products. We curate them — sourcing premium
+              quality, timeless design, and details that inspire beauty."
             </blockquote>
           </div>
         </div>
@@ -72,38 +94,49 @@ export default function About() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="bg-dark-charcoal/40 border border-gold/10 p-6 rounded-xl space-y-3">
               <Gem size={22} className="text-gold" />
-              <h3 className="font-serif text-base font-semibold text-white">Refined Selection</h3>
+              <h3 className="font-serif text-base font-semibold text-white">
+                Refined Selection
+              </h3>
               <p className="text-xs text-warm-ivory/60 leading-relaxed font-light">
-                We catalog items with strict aesthetic criteria, making sure everything feels luxurious and unique.
+                We catalog items with strict aesthetic criteria, making sure
+                everything feels luxurious and unique.
               </p>
             </div>
-            
+
             <div className="bg-dark-charcoal/40 border border-gold/10 p-6 rounded-xl space-y-3">
               <Shield size={22} className="text-gold" />
-              <h3 className="font-serif text-base font-semibold text-white">Trust & Quality</h3>
+              <h3 className="font-serif text-base font-semibold text-white">
+                Trust & Quality
+              </h3>
               <p className="text-xs text-warm-ivory/60 leading-relaxed font-light">
-                We source only genuine fabrics and goods, performing meticulous pre-delivery checks.
+                We source only genuine fabrics and goods, performing meticulous
+                pre-delivery checks.
               </p>
             </div>
 
             <div className="bg-dark-charcoal/40 border border-gold/10 p-6 rounded-xl space-y-3">
               <Handshake size={22} className="text-gold" />
-              <h3 className="font-serif text-base font-semibold text-white">Personal Care</h3>
+              <h3 className="font-serif text-base font-semibold text-white">
+                Personal Care
+              </h3>
               <p className="text-xs text-warm-ivory/60 leading-relaxed font-light">
-                Every customer interaction is personal, centered around direct communication and custom service.
+                Every customer interaction is personal, centered around direct
+                communication and attentive service.
               </p>
             </div>
 
             <div className="bg-dark-charcoal/40 border border-gold/10 p-6 rounded-xl space-y-3">
               <Sparkles size={22} className="text-gold" />
-              <h3 className="font-serif text-base font-semibold text-white">Faith & Devotion</h3>
+              <h3 className="font-serif text-base font-semibold text-white">
+                Faith & Devotion
+              </h3>
               <p className="text-xs text-warm-ivory/60 leading-relaxed font-light">
-                Operating with absolute integrity, transparency, and grace in all our commercial endeavors.
+                Operating with absolute integrity, transparency, and grace in
+                all our commercial endeavors.
               </p>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

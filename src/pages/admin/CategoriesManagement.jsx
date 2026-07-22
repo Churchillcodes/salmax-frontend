@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from "react";
-import {
-  Plus,
-  Edit,
-  Archive,
-  FolderHeart,
-  Trash2,
-  X,
-  RefreshCw,
-} from "lucide-react";
+import { Plus, Edit, Archive, FolderHeart, X, RefreshCw } from "lucide-react";
 import apiClient from "../../api/apiClient";
 import { toast } from "react-toastify";
+import { confirmToast } from "../../utils/ConfirmToast";
 
 export default function CategoriesManagement() {
   const [categories, setCategories] = useState([]);
@@ -78,10 +71,13 @@ export default function CategoriesManagement() {
   const handleToggleActive = async (cat) => {
     const nextActive = cat.isActive === false;
     if (!nextActive) {
-      const confirmArchive = window.confirm(
-        `WARNING: You are about to archive the category "${cat.name}".\n\nThis will hide this category from storefront filters, and any active products linked to this category may display empty categories.\n\nDo you want to proceed?`,
-      );
-      if (!confirmArchive) return;
+      const confirmed = await confirmToast({
+        message: `Archive "${cat.name}"?`,
+        detail:
+          "This will hide this category from storefront filters, and active products linked to it may display without a category tag.",
+        confirmLabel: "Archive",
+      });
+      if (!confirmed) return;
     }
 
     try {
@@ -95,25 +91,6 @@ export default function CategoriesManagement() {
     } catch (err) {
       console.error("Failed to toggle category active status:", err);
       toast.error("Could not modify category status.");
-    }
-  };
-
-  const handleDeleteCategory = async (catId) => {
-    if (
-      !window.confirm(
-        "WARNING: You are about to permanently DELETE this category.\n\nThis action cannot be undone. Products linked to this category will display empty categories.\n\nDo you want to proceed?",
-      )
-    ) {
-      return;
-    }
-
-    try {
-      await apiClient.delete(`/categories/${catId}`);
-      toast.success("Category deleted successfully.");
-      fetchCategories();
-    } catch (err) {
-      console.error("Delete category failed:", err);
-      toast.error("Failed to delete category.");
     }
   };
 
@@ -257,13 +234,6 @@ export default function CategoriesManagement() {
                   >
                     <Edit size={14} />
                   </button>
-                  <button
-                    onClick={() => handleDeleteCategory(cat._id || cat.id)}
-                    className="p-1 text-warm-ivory/60 hover:text-red-400 transition"
-                    title="Delete Category"
-                  >
-                    <Trash2 size={14} />
-                  </button>
                 </div>
               </div>
             </div>
@@ -283,8 +253,8 @@ export default function CategoriesManagement() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-dark-charcoal border border-gold/25 rounded-xl overflow-hidden shadow-2xl animate-fade-in text-warm-ivory">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base">
+          <div className="w-full max-w-md max-h-[90vh] bg-dark-charcoal border border-gold/25 rounded-xl shadow-2xl animate-fade-in text-warm-ivory flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base shrink-0">
               <h3 className="font-serif text-base text-gold font-medium tracking-wide">
                 {editingCategory ? "Modify Category" : "Create New Category"}
               </h3>
@@ -296,7 +266,10 @@ export default function CategoriesManagement() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form
+              onSubmit={handleSubmit}
+              className="p-6 space-y-4 overflow-y-auto flex-1"
+            >
               <div>
                 <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
                   Category Name *

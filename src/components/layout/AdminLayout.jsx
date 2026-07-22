@@ -59,10 +59,12 @@ export default function AdminLayout() {
               to="/"
               className="text-center group flex flex-col items-center"
             >
-              <span className="font-serif text-2xl font-bold tracking-widest text-gold group-hover:text-gold-light transition duration-300">
-                SALMAX
-              </span>
-              <span className="text-[10px] uppercase tracking-[0.25em] text-white/50 mt-1">
+              <img
+                src="/brand/salmax-primary-color.png"
+                alt="Salmax Suppliers"
+                className="h-20 w-auto object-contain group-hover:opacity-90 transition duration-300"
+              />
+              <span className="text-[10px] uppercase tracking-[0.25em] text-white/50 mt-2">
                 ADMIN CONSOLE
               </span>
             </Link>

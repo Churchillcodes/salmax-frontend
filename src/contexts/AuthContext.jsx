@@ -9,6 +9,10 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
+      if (!window.location.pathname.startsWith("/admin")) {
+        setLoading(false);
+        return;
+      }
       try {
         const response = await apiClient.get("/auth/refresh", {
           timeout: 8000,

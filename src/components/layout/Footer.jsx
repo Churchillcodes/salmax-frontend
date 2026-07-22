@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Compass, Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin } from "lucide-react";
+import { BUSINESS_INFO } from "../../config/siteConfig";
 
-const BIBLE_VERSES = [
+const FALLBACK_VERSES = [
   {
     text: "Trust in the Lord with all your heart, and do not lean on your own understanding. In all your ways acknowledge him, and he will make straight your paths.",
     ref: "Proverbs 3:5-6",
@@ -37,24 +38,72 @@ const BIBLE_VERSES = [
   },
 ];
 
+const MAX_VERSE_LENGTH = 260; // keep the footer layout tidy
+
 export default function Footer() {
-  const [verseIndex, setVerseIndex] = useState(0);
+  const [verse, setVerse] = useState(FALLBACK_VERSES[0]);
   const [fade, setFade] = useState(true);
+  const [fallbackIndex, setFallbackIndex] = useState(0);
+
+  const pickFallback = () => {
+    const idx = Math.floor(Math.random() * FALLBACK_VERSES.length);
+    setFallbackIndex(idx);
+    return FALLBACK_VERSES[idx];
+  };
+
+  const fetchRandomVerse = async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    try {
+      const res = await fetch("https://bible-api.com/?random=verse", {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!res.ok) throw new Error("Bad response");
+      const data = await res.json();
+      const text = (data?.text || "").trim().replace(/\s+/g, " ");
+      if (text && text.length <= MAX_VERSE_LENGTH && data.reference) {
+        return { text, ref: data.reference };
+      }
+      throw new Error("Verse unsuitable");
+    } catch (e) {
+      clearTimeout(timeoutId);
+      return null;
+    }
+  };
 
   useEffect(() => {
-    // Select random verse on load
-    const randomIndex = Math.floor(Math.random() * BIBLE_VERSES.length);
-    setVerseIndex(randomIndex);
+    let cancelled = false;
 
-    const interval = setInterval(() => {
+    // Show a curated verse immediately, then try to enrich with a fresh one.
+    setVerse(pickFallback());
+    fetchRandomVerse().then((fetched) => {
+      if (!cancelled && fetched) setVerse(fetched);
+    });
+
+    const interval = setInterval(async () => {
       setFade(false);
+      const fetched = await fetchRandomVerse();
       setTimeout(() => {
-        setVerseIndex((prev) => (prev + 1) % BIBLE_VERSES.length);
+        if (cancelled) return;
+        if (fetched) {
+          setVerse(fetched);
+        } else {
+          setFallbackIndex((prev) => {
+            const next = (prev + 1) % FALLBACK_VERSES.length;
+            setVerse(FALLBACK_VERSES[next]);
+            return next;
+          });
+        }
         setFade(true);
-      }, 500); // match transition duration
-    }, 15000); // 15 seconds rotation
+      }, 500);
+    }, 18000);
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -63,17 +112,16 @@ export default function Footer() {
         {/* Brand info */}
         <div className="space-y-4">
           <Link to="/" className="inline-block">
-            <span className="font-serif text-3xl font-semibold tracking-widest text-gold hover:text-gold-light transition duration-300">
-              SALMAX
-            </span>
-            <span className="block text-xs uppercase tracking-[0.25em] text-white/50">
-              SUPPLIERS
-            </span>
+            <img
+              src="/brand/salmax-horizontal-color.png"
+              alt="Salmax Suppliers"
+              className="h-14 w-auto object-contain"
+            />
           </Link>
           <p className="text-sm font-light text-warm-ivory/60 leading-relaxed">
             Curators of premium products and elegant supplies. We offer a
-            bespoke boutique experience tailored for those who appreciate fine
-            quality, timeless craftsmanship, and exceptional customer service.
+            premium boutique experience for those who appreciate fine quality,
+            timeless craftsmanship, and exceptional customer service.
           </p>
         </div>
 
@@ -112,7 +160,7 @@ export default function Footer() {
                 to="/contact"
                 className="hover:text-gold transition-colors duration-300"
               >
-                Inquire & Contact
+                Inquire &amp; Contact
               </Link>
             </li>
             <li>
@@ -134,24 +182,26 @@ export default function Footer() {
           <ul className="space-y-4 text-sm font-light">
             <li className="flex items-start gap-3">
               <MapPin size={16} className="text-gold shrink-0 mt-1" />
-              <span className="text-warm-ivory/60">Nairobi, Kenya</span>
+              <span className="text-warm-ivory/60">
+                {BUSINESS_INFO.location}
+              </span>
             </li>
             <li className="flex items-center gap-3">
               <Phone size={16} className="text-gold shrink-0" />
               <a
-                href="tel:+254700000000"
+                href={BUSINESS_INFO.phoneHref}
                 className="hover:text-gold transition-colors duration-300 text-warm-ivory/60"
               >
-                +254 719 246 761
+                {BUSINESS_INFO.phone}
               </a>
             </li>
             <li className="flex items-center gap-3">
               <Mail size={16} className="text-gold shrink-0" />
               <a
-                href="mailto:info@salmaxsuppliers.com"
+                href={`mailto:${BUSINESS_INFO.email}`}
                 className="hover:text-gold transition-colors duration-300 text-warm-ivory/60"
               >
-                info@salmaxsuppliers.com
+                {BUSINESS_INFO.email}
               </a>
             </li>
           </ul>
@@ -167,7 +217,7 @@ export default function Footer() {
           </p>
           <div className="flex gap-4">
             <a
-              href="https://instagram.com"
+              href={BUSINESS_INFO.instagramUrl}
               target="_blank"
               rel="noreferrer"
               className="w-10 h-10 rounded-full border border-gold/20 flex items-center justify-center hover:border-gold hover:text-gold transition duration-300 text-warm-ivory/70"
@@ -189,7 +239,7 @@ export default function Footer() {
               </svg>
             </a>
             <a
-              href="https://facebook.com"
+              href={BUSINESS_INFO.facebookUrl}
               target="_blank"
               rel="noreferrer"
               className="w-10 h-10 rounded-full border border-gold/20 flex items-center justify-center hover:border-gold hover:text-gold transition duration-300 text-warm-ivory/70"
@@ -212,16 +262,16 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Rotating Bible Verse Section */}
+      {/* Rotating verse section */}
       <div className="max-w-3xl mx-auto my-12 text-center px-4">
         <div
           className={`transition-all duration-500 transform ${fade ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
         >
           <p className="font-serif italic text-base md:text-lg text-gold/90 font-light leading-relaxed">
-            "{BIBLE_VERSES[verseIndex].text}"
+            "{verse.text}"
           </p>
           <p className="text-xs uppercase tracking-widest text-white/40 mt-3">
-            — {BIBLE_VERSES[verseIndex].ref}
+            — {verse.ref}
           </p>
         </div>
       </div>
@@ -234,13 +284,13 @@ export default function Footer() {
         </div>
         <div className="flex gap-6">
           <Link
-            to="/about"
+            to="/privacy-policy"
             className="hover:text-gold transition-colors duration-300"
           >
             Privacy Policy
           </Link>
           <Link
-            to="/contact"
+            to="/terms-of-service"
             className="hover:text-gold transition-colors duration-300"
           >
             Terms of Service

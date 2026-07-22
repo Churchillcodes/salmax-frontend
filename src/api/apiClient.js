@@ -50,6 +50,11 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+const RETRYABLE_STATUSES = [502, 503, 504];
+const MAX_RETRIES = 2;
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 apiClient.interceptors.response.use(
   (response) => {
     return response;
@@ -57,6 +62,11 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    // --- 401: attempt a token refresh once, queueing concurrent requests ---
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
@@ -94,10 +104,26 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         setAccessToken("");
-        // Return custom rejection to handle logout on auth failure
         return Promise.reject({ ...refreshError, isRefreshFailed: true });
       } finally {
         isRefreshing = false;
+      }
+    }
+
+    // --- Network errors / transient 502-504 on GET requests: retry with backoff ---
+    const isNetworkOrServerError =
+      !error.response || RETRYABLE_STATUSES.includes(error.response.status);
+    const isIdempotentGet =
+      (originalRequest.method || "get").toLowerCase() === "get";
+    const isAuthCall = isAuthEndpoint(originalRequest.url || "");
+
+    if (isNetworkOrServerError && isIdempotentGet && !isAuthCall) {
+      originalRequest._retryCount = originalRequest._retryCount || 0;
+
+      if (originalRequest._retryCount < MAX_RETRIES) {
+        originalRequest._retryCount += 1;
+        await wait(400 * originalRequest._retryCount);
+        return apiClient(originalRequest);
       }
     }
 

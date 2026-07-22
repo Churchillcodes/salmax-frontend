@@ -21,6 +21,7 @@ import {
   normalizeProduct,
   SIZE_OPTIONS,
 } from "../../utils/apiData";
+import { confirmToast } from "../../utils/confirmToast";
 
 export default function ProductsManagement() {
   const [products, setProducts] = useState([]);
@@ -134,11 +135,13 @@ export default function ProductsManagement() {
     const pId = product._id || product.id;
 
     if (isCurrentlyActive) {
-      // Archive (Soft Delete)
-      const confirmArchive = window.confirm(
-        `WARNING: You are about to archive the product "${product.name}".\n\nThis will remove it from all storefront catalog pages and search views. You can restore it later if needed.\n\nDo you want to proceed?`,
-      );
-      if (!confirmArchive) return;
+      const confirmed = await confirmToast({
+        message: `Archive "${product.name}"?`,
+        detail:
+          "This removes it from all storefront catalog pages and search views. You can restore it later.",
+        confirmLabel: "Archive",
+      });
+      if (!confirmed) return;
 
       try {
         await apiClient.delete(`/products/${pId}`);
@@ -149,11 +152,14 @@ export default function ProductsManagement() {
         toast.error("Could not archive product.");
       }
     } else {
-      // Restore from archive
-      const confirmRestore = window.confirm(
-        `You are about to restore the product "${product.name}".\n\nThis will make it active and visible in the boutique catalog again.\n\nDo you want to proceed?`,
-      );
-      if (!confirmRestore) return;
+      const confirmed = await confirmToast({
+        message: `Restore "${product.name}"?`,
+        detail:
+          "This will make it active and visible in the boutique catalog again.",
+        confirmLabel: "Restore",
+        tone: "default",
+      });
+      if (!confirmed) return;
 
       try {
         await apiClient.patch(`/products/${pId}/restore`);
@@ -657,9 +663,9 @@ export default function ProductsManagement() {
 
       {/* Add / Edit Form Modal */}
       {showFormModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-2xl bg-dark-charcoal border border-gold/25 rounded-xl overflow-hidden shadow-2xl animate-fade-in text-warm-ivory my-8">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+          <div className="w-full max-w-2xl max-h-[90vh] bg-dark-charcoal border border-gold/25 rounded-xl shadow-2xl animate-fade-in text-warm-ivory flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base shrink-0">
               <h3 className="font-serif text-base text-gold font-medium tracking-wide">
                 {editingProduct
                   ? "Modify Boutique Product"
@@ -675,7 +681,7 @@ export default function ProductsManagement() {
 
             <form
               onSubmit={handleSubmit}
-              className="p-6 space-y-5 max-h-[80vh] overflow-y-auto"
+              className="p-6 space-y-5 overflow-y-auto flex-1"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {/* Name */}
@@ -831,14 +837,16 @@ export default function ProductsManagement() {
                           <button
                             type="button"
                             onClick={async () => {
-                              const confirmDel = window.confirm(
-                                `WARNING: Are you sure you want to remove this product image?\n\nThis will permanently delete it from Cloudinary.\n\nDo you want to proceed?`,
-                              );
-                              if (!confirmDel) return;
+                              const confirmed = await confirmToast({
+                                message: "Remove this product image?",
+                                detail:
+                                  "This will permanently delete it from Cloudinary.",
+                                confirmLabel: "Remove",
+                              });
+                              if (!confirmed) return;
 
                               const imgObj = rawImages[index];
                               if (!editingProduct || !imgObj?._id) {
-                                // Fallback for a product not yet saved — just remove locally
                                 setFormImages((prev) =>
                                   prev.filter((_, i) => i !== index),
                                 );

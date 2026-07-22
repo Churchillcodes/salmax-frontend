@@ -37,14 +37,9 @@ export default function SalesLogs() {
 
   const filteredSales = sales.filter((sale) => {
     const q = searchQuery.toLowerCase();
-    const customer =
-      sale.customerName ||
-      sale.customer?.name ||
-      sale.order?.customerName ||
-      "";
-    const product =
-      sale.productName || sale.product?.name || sale.order?.productName || "";
-    const id = sale._id || sale.id || "";
+    const customer = sale.customerName || "";
+    const product = sale.productName || "";
+    const id = sale._id || "";
     return (
       customer.toLowerCase().includes(q) ||
       product.toLowerCase().includes(q) ||
@@ -176,22 +171,12 @@ export default function SalesLogs() {
               <tbody className="divide-y divide-gold/5 text-xs font-light text-warm-ivory/80">
                 {filteredSales.map((sale) => {
                   const saleId = sale._id || sale.id || "";
-                  const customer =
-                    sale.customerName ||
-                    sale.customer?.name ||
-                    sale.order?.customerName ||
-                    "Unknown";
-                  const product =
-                    sale.productName ||
-                    sale.product?.name ||
-                    sale.order?.productName ||
-                    "—";
-                  const size = sale.size || sale.order?.size || "—";
+                  const customer = sale.customerName || "Unknown";
+                  const product = sale.productName || "—";
+                  const size = sale.size || "—";
                   const qty = Number(sale.quantity || 1);
-                  const revenue = Number(
-                    sale.totalAmount || sale.total || sale.amount || 0,
-                  );
-                  const date = sale.createdAt || sale.date || sale.deliveredAt;
+                  const revenue = Number(sale.totalAmount || 0);
+                  const date = sale.saleDate;
                   return (
                     <tr
                       key={saleId}
@@ -252,7 +237,7 @@ export default function SalesLogs() {
       {/* Sale Detail Modal */}
       {viewingSale && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-dark-charcoal border border-gold/25 rounded-xl overflow-hidden shadow-2xl animate-fade-in text-warm-ivory">
+          <div className="w-full max-w-md max-h-[90vh] bg-dark-charcoal border border-gold/25 rounded-xl overflow-hidden shadow-2xl animate-fade-in text-warm-ivory">
             <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base">
               <div className="flex items-center gap-2">
                 <ReceiptText size={18} className="text-gold" />
@@ -277,20 +262,13 @@ export default function SalesLogs() {
                   Customer Details
                 </p>
                 <p className="text-sm font-semibold text-white mb-1">
-                  {viewingSale.customerName ||
-                    viewingSale.customer?.name ||
-                    viewingSale.order?.customerName ||
-                    "Unknown"}
+                  {viewingSale.customerName || "Unknown"}
                 </p>
                 <p className="text-warm-ivory/60">
-                  {viewingSale.customerPhone ||
-                    viewingSale.customer?.phone ||
-                    "—"}
+                  {viewingSale.customerPhone || "—"}
                 </p>
                 <p className="text-warm-ivory/60">
-                  {viewingSale.customerEmail ||
-                    viewingSale.customer?.email ||
-                    "—"}
+                  {viewingSale.customerLocation || "—"}
                 </p>
               </div>
 
@@ -300,38 +278,14 @@ export default function SalesLogs() {
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    [
-                      "Product",
-                      viewingSale.productName ||
-                        viewingSale.product?.name ||
-                        "—",
-                    ],
-                    [
-                      "Size",
-                      (
-                        viewingSale.size ||
-                        viewingSale.order?.size ||
-                        "—"
-                      ).toUpperCase(),
-                    ],
+                    ["Product", viewingSale.productName || "—"],
+                    ["Size", (viewingSale.size || "—").toUpperCase()],
                     ["Quantity", viewingSale.quantity || 1],
                     [
                       "Unit Price",
-                      formatCurrency(
-                        viewingSale.agreedPrice ||
-                          viewingSale.unitPrice ||
-                          viewingSale.price ||
-                          0,
-                      ),
+                      formatCurrency(viewingSale.agreedPrice || 0),
                     ],
-                    [
-                      "Date",
-                      formatDate(
-                        viewingSale.createdAt ||
-                          viewingSale.date ||
-                          viewingSale.deliveredAt,
-                      ),
-                    ],
+                    ["Date", formatDate(viewingSale.saleDate)],
                   ].map(([label, val]) => (
                     <div key={label}>
                       <p className="text-warm-ivory/40 text-[9px] uppercase mb-0.5">
@@ -348,12 +302,7 @@ export default function SalesLogs() {
                   Revenue Earned
                 </span>
                 <span className="text-2xl text-gold font-semibold">
-                  {formatCurrency(
-                    viewingSale.totalAmount ||
-                      viewingSale.total ||
-                      viewingSale.amount ||
-                      0,
-                  )}
+                  {formatCurrency(viewingSale.totalAmount || 0)}
                 </span>
               </div>
             </div>

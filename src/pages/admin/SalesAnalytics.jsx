@@ -422,25 +422,7 @@ export default function SalesAnalytics() {
                     const name = getName(cat);
                     const pct =
                       totalValue > 0 ? Math.round((val / totalValue) * 100) : 0;
-                    const itemCount = (() => {
-                      // count items in this category from orders
-                      let count = 0;
-                      ordersDataset.forEach((order) => {
-                        if (
-                          order.status?.toLowerCase() !== "cancelled" &&
-                          order.items
-                        ) {
-                          order.items.forEach((item) => {
-                            if (
-                              (item.productType || "") === name ||
-                              name === "Unassigned"
-                            )
-                              count += item.quantity || 1;
-                          });
-                        }
-                      });
-                      return count;
-                    })();
+                    const itemCount = cat.count || 0;
                     const barColors = [
                       "bg-gold",
                       "bg-emerald-500",

@@ -19,6 +19,7 @@ import {
   normalizeCategory,
   SIZE_OPTIONS,
 } from "../../utils/apiData";
+import { confirmToast } from "../../utils/confirmToast";
 
 export default function OrdersManagement() {
   const [orders, setOrders] = useState([]);
@@ -32,7 +33,7 @@ export default function OrdersManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerLocation, setCustomerLocation] = useState("");
 
   // Structured order creation flow states
   const [createProductType, setCreateProductType] = useState("");
@@ -132,14 +133,6 @@ export default function OrdersManagement() {
       return;
     }
 
-    if (customerEmail && customerEmail.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(customerEmail.trim())) {
-        toast.warning("Please enter a valid email address.");
-        return;
-      }
-    }
-
     if (customerPhone && customerPhone.trim()) {
       const phoneRegex = /^\+?[0-9\s\-()]{7,15}$/;
       if (!phoneRegex.test(customerPhone.trim())) {
@@ -180,7 +173,7 @@ export default function OrdersManagement() {
     const payload = {
       customerName,
       customerPhone,
-      customerEmail,
+      customerLocation,
       product: createProduct._id || createProduct.id,
       productName: createProduct.name,
       quantity: Number(createQuantity),
@@ -206,7 +199,7 @@ export default function OrdersManagement() {
       setShowCreateModal(false);
       setCustomerName("");
       setCustomerPhone("");
-      setCustomerEmail("");
+      setCustomerLocation("");
       setCreateProductType("");
       setCreateGroup("");
       setCreateCategory("");
@@ -221,7 +214,7 @@ export default function OrdersManagement() {
     }
   };
 
-  const handleCancelOrder = (orderId) => {
+  const handleCancelOrder = async (orderId) => {
     const order = orders.find((o) => (o._id || o.id) === orderId);
     if (!order) return;
     if (
@@ -233,7 +226,15 @@ export default function OrdersManagement() {
       );
       return;
     }
-    if (!window.confirm("Are you sure you want to cancel this order?")) return;
+
+    const confirmed = await confirmToast({
+      message: "Cancel this order?",
+      detail: "This action cannot be undone.",
+      confirmLabel: "Cancel Order",
+      cancelLabel: "Keep Order",
+    });
+    if (!confirmed) return;
+
     handleUpdateStatus(orderId, "cancelled");
   };
 
@@ -398,11 +399,16 @@ export default function OrdersManagement() {
                           className={`inline-block text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full ${
                             order.status?.toLowerCase() === "pending"
                               ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"
-                              : order.status?.toLowerCase() === "delivered"
-                                ? "bg-green-500/10 text-green-500 border border-green-500/20"
-                                : order.status?.toLowerCase() === "cancelled"
-                                  ? "bg-rose-500/10 text-rose-500 border border-rose-500/20"
-                                  : "bg-teal-500/10 text-teal-500 border border-teal-500/20"
+                              : order.status?.toLowerCase() === "confirmed"
+                                ? "bg-teal-500/10 text-teal-500 border border-teal-500/20"
+                                : order.status?.toLowerCase() === "ready"
+                                  ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                                  : order.status?.toLowerCase() === "delivered"
+                                    ? "bg-green-500/10 text-green-500 border border-green-500/20"
+                                    : order.status?.toLowerCase() ===
+                                        "cancelled"
+                                      ? "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                                      : "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20"
                           }`}
                         >
                           {order.status}
@@ -541,9 +547,9 @@ export default function OrdersManagement() {
             : 0;
 
           return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
-              <div className="w-full max-w-lg bg-dark-charcoal border border-gold/25 rounded-xl overflow-hidden shadow-2xl animate-fade-in text-warm-ivory my-6">
-                <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+              <div className="w-full max-w-lg max-h-[90vh] bg-dark-charcoal border border-gold/25 rounded-xl shadow-2xl animate-fade-in text-warm-ivory flex flex-col overflow-hidden">
+                <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base shrink-0">
                   <h3 className="font-serif text-base text-gold font-medium tracking-wide">
                     Create New Order
                   </h3>
@@ -557,7 +563,7 @@ export default function OrdersManagement() {
 
                 <form
                   onSubmit={handleCreateOrder}
-                  className="p-6 space-y-5 max-h-[80vh] overflow-y-auto"
+                  className="p-6 space-y-5 overflow-y-auto flex-1"
                 >
                   {/* Customer Details */}
                   <div className="space-y-1">
@@ -591,12 +597,13 @@ export default function OrdersManagement() {
                     </div>
                     <div>
                       <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/60 mb-1.5 font-semibold">
-                        Email
+                        Delivery Location
                       </label>
                       <input
-                        type="email"
-                        value={customerEmail}
-                        onChange={(e) => setCustomerEmail(e.target.value)}
+                        type="text"
+                        value={customerLocation}
+                        onChange={(e) => setCustomerLocation(e.target.value)}
+                        placeholder="e.g., Westlands, Nairobi"
                         className="w-full bg-dark-base border border-gold/15 rounded px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-gold/30"
                       />
                     </div>
@@ -832,8 +839,8 @@ export default function OrdersManagement() {
 
       {viewingOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-dark-charcoal border border-gold/25 rounded-xl overflow-hidden shadow-2xl animate-fade-in text-warm-ivory">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base">
+          <div className="w-full max-w-lg max-h-[90vh] bg-dark-charcoal border border-gold/25 rounded-xl shadow-2xl animate-fade-in text-warm-ivory flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base shrink-0">
               <div className="flex items-center gap-2">
                 <FileText size={18} className="text-gold" />
                 <h3 className="font-serif text-base text-gold font-medium tracking-wide">
@@ -849,7 +856,7 @@ export default function OrdersManagement() {
               </button>
             </div>
 
-            <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
               <div className="grid gap-4 sm:grid-cols-2 text-xs font-light bg-dark-base/40 p-4 rounded-lg border border-gold/5">
                 <div>
                   <h4 className="font-semibold text-white/50 uppercase tracking-wider mb-1">
@@ -864,7 +871,7 @@ export default function OrdersManagement() {
                     {viewingOrder.customerPhone || viewingOrder.customer?.phone}
                   </p>
                   <p>
-                    {viewingOrder.customerEmail || viewingOrder.customer?.email}
+                    {viewingOrder.customerLocation || "No location provided"}
                   </p>
                 </div>
                 <div>

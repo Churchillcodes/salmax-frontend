@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link as RouterLink } from "react-router-dom";
 import {
   ArrowRight,
   Compass,
   ShieldCheck,
-  Heart,
+  MessageCircle,
   Sparkles,
-  AlertCircle,
 } from "lucide-react";
 import apiClient from "../../api/apiClient";
 import ProductCard from "../../components/store/ProductCard";
@@ -16,7 +16,7 @@ const HERO_SLIDES = [
   {
     image:
       "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1600&auto=format&fit=crop",
-    title: "The Autumn Boutique Collection",
+    title: "The Best Boutique Collection",
     subtitle: "Meticulously Selected Apparel & Textures",
     cta: "Explore Collection",
   },
@@ -41,7 +41,6 @@ export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Rotate Hero Slides
   useEffect(() => {
     const slideInterval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
@@ -49,27 +48,40 @@ export default function Home() {
     return () => clearInterval(slideInterval);
   }, []);
 
-  // Fetch Featured Products (first 4 active products)
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
         const response = await apiClient.get("/products");
-        const active = (response.data || [])
+        const featured = (response.data || [])
           .filter((p) => p.isActive !== false)
           .map((product) => normalizeProduct(product))
           .slice(0, 4);
-        setFeaturedProducts(active);
+        setFeaturedProducts(featured);
       } catch (error) {
         console.error("Error fetching featured products:", error);
       } finally {
         setLoading(false);
       }
     };
+
     fetchFeatured();
   }, []);
 
   return (
     <div className="bg-dark-base min-h-screen text-warm-ivory">
+      <Helmet>
+        <title>
+          Salmax Suppliers | Premium Boutique Clothing, Accessories & Supplies
+          in Nairobi
+        </title>
+        <meta
+          name="description"
+          content="Salmax Suppliers is a Nairobi-based boutique supplier of premium, hand-selected clothing, accessories, and curated materials. Browse our catalogue and inquire directly on WhatsApp."
+        />
+        <link rel="canonical" href="https://www.salmaxsuppliers.com/" />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
+
       {/* Dynamic Hero Section */}
       <section className="relative min-h-[78vh] overflow-hidden sm:h-[85vh]">
         {HERO_SLIDES.map((slide, idx) => (
@@ -79,15 +91,14 @@ export default function Home() {
               idx === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
           >
-            {/* Background Image with Dark Overlay */}
             <div className="absolute inset-0 bg-black/60 z-10" />
             <img
               src={slide.image}
               alt={slide.title}
+              loading={idx === 0 ? "eager" : "lazy"}
               className="w-full h-full object-cover transform scale-105 transition-transform duration-[6000ms] ease-out"
             />
 
-            {/* Content overlay */}
             <div className="absolute inset-0 z-20 flex flex-col justify-center items-center text-center px-4 sm:px-6">
               <span className="text-gold uppercase tracking-[0.35em] text-xs md:text-sm font-semibold mb-3 animate-fade-in">
                 {slide.subtitle}
@@ -101,7 +112,7 @@ export default function Home() {
                   to="/shop"
                   className="w-full sm:w-auto bg-gold text-dark-base font-semibold px-8 py-3.5 rounded text-sm uppercase tracking-widest hover:bg-gold-light gold-glow transition duration-300 flex items-center justify-center gap-2"
                 >
-                  Explore Collection
+                  {slide.cta}
                   <ArrowRight size={16} />
                 </RouterLink>
               </div>
@@ -109,7 +120,6 @@ export default function Home() {
           </div>
         ))}
 
-        {/* Slide Indicators */}
         <div className="absolute bottom-6 left-0 right-0 z-30 flex justify-center gap-3">
           {HERO_SLIDES.map((_, idx) => (
             <button
@@ -158,12 +168,12 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Collage Display */}
         <div className="grid grid-cols-12 gap-4 relative">
           <div className="col-span-8 rounded-lg overflow-hidden border border-gold/10 aspect-[4/3] bg-dark-charcoal">
             <img
               src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=800"
               alt="Tailoring details"
+              loading="lazy"
               className="w-full h-full object-cover"
             />
           </div>
@@ -171,6 +181,7 @@ export default function Home() {
             <img
               src="https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=600"
               alt="Boutique display"
+              loading="lazy"
               className="w-full h-full object-cover"
             />
           </div>
@@ -242,13 +253,12 @@ export default function Home() {
             Commitment to Excellence
           </h2>
           <p className="text-warm-ivory/60 text-sm font-light leading-relaxed">
-            We provide a bespoke retail supply chain tailored around boutique
+            We provide a trusted retail supply chain built around boutique
             authenticity and transparent client interactions.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Card 1 */}
           <div className="bg-dark-charcoal border border-gold/10 p-8 rounded-xl space-y-4 hover:border-gold/30 premium-transition">
             <div className="w-12 h-12 rounded-lg bg-gold/5 flex items-center justify-center text-gold border border-gold/20">
               <Compass size={22} />
@@ -257,12 +267,11 @@ export default function Home() {
               Curated Selections
             </h3>
             <p className="text-warm-ivory/60 text-sm font-light leading-relaxed">
-              We hand-select every collection, cataloging only unique materials
+              We hand-select every collection, importing only unique materials
               and designs that fit premium luxury fashion and lifestyle demands.
             </p>
           </div>
 
-          {/* Card 2 */}
           <div className="bg-dark-charcoal border border-gold/10 p-8 rounded-xl space-y-4 hover:border-gold/30 premium-transition">
             <div className="w-12 h-12 rounded-lg bg-gold/5 flex items-center justify-center text-gold border border-gold/20">
               <ShieldCheck size={22} />
@@ -276,13 +285,12 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Card 3 */}
           <div className="bg-dark-charcoal border border-gold/10 p-8 rounded-xl space-y-4 hover:border-gold/30 premium-transition">
             <div className="w-12 h-12 rounded-lg bg-gold/5 flex items-center justify-center text-gold border border-gold/20">
-              <Heart size={22} />
+              <MessageCircle size={22} />
             </div>
             <h3 className="font-serif text-lg font-medium text-white tracking-wide">
-              Bespoke Services
+              Dedicated Service
             </h3>
             <p className="text-warm-ivory/60 text-sm font-light leading-relaxed">
               From our dedicated WhatsApp inquiry flows to quick responses and
@@ -292,7 +300,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Boutique Testimonials / Trust Elements */}
+      {/* Testimonials */}
       <section className="py-20 bg-dark-charcoal/20 border-t border-gold/5 text-center">
         <div className="max-w-4xl mx-auto px-6 space-y-8">
           <span className="text-gold uppercase tracking-[0.25em] text-xs font-semibold block">

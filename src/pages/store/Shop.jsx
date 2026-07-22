@@ -53,15 +53,51 @@ export default function Shop() {
     fetchData();
   }, []);
 
-  // Extract unique product types and groups from active products for filter dropdowns
+  // Extract unique product types from active products for the filter dropdown
   const productTypes = [
     "All",
     ...new Set(products.map((p) => p.productType).filter(Boolean)),
   ];
-  const groups = [
-    "All",
-    ...new Set(products.map((p) => p.group || p.productGroup).filter(Boolean)),
-  ];
+
+  // Groups are scoped to whichever Product Type is currently selected,
+  // matching the cascading Type -> Group -> Category flow.
+  const groups =
+    selectedProductType === "All"
+      ? []
+      : [
+          "All",
+          ...new Set(
+            products
+              .filter((p) => p.productType === selectedProductType)
+              .map((p) => p.group || p.productGroup)
+              .filter(Boolean),
+          ),
+        ];
+
+  // Categories are scoped to the current Type + Group selection, so a
+  // customer can never see two ambiguous same-name categories at once.
+  const scopedCategories = categories.filter((cat) => {
+    if (selectedProductType === "All") return true;
+    if (cat.productType?.toLowerCase() !== selectedProductType.toLowerCase())
+      return false;
+    if (selectedProductType === "Bags") return true;
+    if (selectedGroup === "All") return true;
+    const catGroup = cat.group ? cat.group.toLowerCase() : "";
+    return catGroup === selectedGroup.toLowerCase();
+  });
+
+  // Cascading reset handlers — selecting a broader filter clears the
+  // narrower ones downstream of it.
+  const handleTypeChange = (value) => {
+    setSelectedProductType(value);
+    setSelectedGroup("All");
+    setSelectedCategory("All");
+  };
+
+  const handleGroupChange = (value) => {
+    setSelectedGroup(value);
+    setSelectedCategory("All");
+  };
 
   // Filtering & Sorting Logic
   const filteredProducts = products.filter((product) => {
@@ -151,32 +187,15 @@ export default function Shop() {
             />
           </div>
 
-          {/* Desktop Filter Selectors */}
+          {/* Desktop Filter Selectors — Type -> Group -> Category cascade */}
           <div className="hidden lg:flex items-center gap-4">
-            {/* Category Select */}
-            <div className="flex items-center gap-1.5 text-xs text-warm-ivory/60 uppercase tracking-widest">
-              <span>Category:</span>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-dark-base border border-gold/10 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-gold cursor-pointer"
-              >
-                <option value="All">All Categories</option>
-                {categories.map((cat) => (
-                  <option key={cat._id || cat.id} value={cat._id || cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Product Type Select */}
+            {/* Product Type Select — always first, drives everything downstream */}
             {productTypes.length > 2 && (
               <div className="flex items-center gap-1.5 text-xs text-warm-ivory/60 uppercase tracking-widest">
                 <span>Type:</span>
                 <select
                   value={selectedProductType}
-                  onChange={(e) => setSelectedProductType(e.target.value)}
+                  onChange={(e) => handleTypeChange(e.target.value)}
                   className="bg-dark-base border border-gold/10 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-gold cursor-pointer"
                 >
                   {productTypes.map((type) => (
@@ -188,13 +207,13 @@ export default function Shop() {
               </div>
             )}
 
-            {/* Group Select */}
-            {groups.length > 2 && (
+            {/* Group Select — only meaningful once a Type is chosen */}
+            {selectedProductType !== "All" && groups.length > 2 && (
               <div className="flex items-center gap-1.5 text-xs text-warm-ivory/60 uppercase tracking-widest">
                 <span>Group:</span>
                 <select
                   value={selectedGroup}
-                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  onChange={(e) => handleGroupChange(e.target.value)}
                   className="bg-dark-base border border-gold/10 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-gold cursor-pointer"
                 >
                   {groups.map((g) => (
@@ -205,6 +224,23 @@ export default function Shop() {
                 </select>
               </div>
             )}
+
+            {/* Category Select — scoped to current Type + Group */}
+            <div className="flex items-center gap-1.5 text-xs text-warm-ivory/60 uppercase tracking-widest">
+              <span>Category:</span>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="bg-dark-base border border-gold/10 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-gold cursor-pointer"
+              >
+                <option value="All">All Categories</option>
+                {scopedCategories.map((cat) => (
+                  <option key={cat._id || cat.id} value={cat._id || cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Mobile Filter Toggle & Sort Select */}
@@ -234,7 +270,7 @@ export default function Shop() {
           </div>
         </div>
 
-        {/* Mobile Filters Panel */}
+        {/* Mobile Filters Panel — same Type -> Group -> Category cascade */}
         {showMobileFilters && (
           <div className="lg:hidden bg-dark-charcoal/60 border border-gold/10 rounded-xl p-5 mb-6 space-y-4 animate-fade-in">
             <div className="flex justify-between items-center border-b border-gold/10 pb-3">
@@ -252,29 +288,11 @@ export default function Shop() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/40 mb-1">
-                  Category
-                </label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full bg-dark-base border border-gold/10 rounded p-2 text-xs text-white"
-                >
-                  <option value="All">All Categories</option>
-                  {categories.map((cat) => (
-                    <option key={cat._id || cat.id} value={cat._id || cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/40 mb-1">
                   Product Type
                 </label>
                 <select
                   value={selectedProductType}
-                  onChange={(e) => setSelectedProductType(e.target.value)}
+                  onChange={(e) => handleTypeChange(e.target.value)}
                   className="w-full bg-dark-base border border-gold/10 rounded p-2 text-xs text-white"
                 >
                   {productTypes.map((type) => (
@@ -285,18 +303,38 @@ export default function Shop() {
                 </select>
               </div>
 
+              {selectedProductType !== "All" && groups.length > 2 && (
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/40 mb-1">
+                    Group
+                  </label>
+                  <select
+                    value={selectedGroup}
+                    onChange={(e) => handleGroupChange(e.target.value)}
+                    className="w-full bg-dark-base border border-gold/10 rounded p-2 text-xs text-white"
+                  >
+                    {groups.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="block text-[10px] uppercase tracking-widest text-warm-ivory/40 mb-1">
-                  Group
+                  Category
                 </label>
                 <select
-                  value={selectedGroup}
-                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
                   className="w-full bg-dark-base border border-gold/10 rounded p-2 text-xs text-white"
                 >
-                  {groups.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
+                  <option value="All">All Categories</option>
+                  {scopedCategories.map((cat) => (
+                    <option key={cat._id || cat.id} value={cat._id || cat.id}>
+                      {cat.name}
                     </option>
                   ))}
                 </select>
@@ -323,22 +361,11 @@ export default function Shop() {
                 </button>
               </span>
             )}
-            {selectedCategory !== "All" && (
-              <span className="bg-gold/10 border border-gold/20 text-gold px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
-                Category
-                <button
-                  onClick={() => setSelectedCategory("All")}
-                  className="text-white hover:text-gold"
-                >
-                  &times;
-                </button>
-              </span>
-            )}
             {selectedProductType !== "All" && (
               <span className="bg-gold/10 border border-gold/20 text-gold px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
                 Type: {selectedProductType}
                 <button
-                  onClick={() => setSelectedProductType("All")}
+                  onClick={() => handleTypeChange("All")}
                   className="text-white hover:text-gold"
                 >
                   &times;
@@ -349,7 +376,18 @@ export default function Shop() {
               <span className="bg-gold/10 border border-gold/20 text-gold px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
                 Group: {selectedGroup}
                 <button
-                  onClick={() => setSelectedGroup("All")}
+                  onClick={() => handleGroupChange("All")}
+                  className="text-white hover:text-gold"
+                >
+                  &times;
+                </button>
+              </span>
+            )}
+            {selectedCategory !== "All" && (
+              <span className="bg-gold/10 border border-gold/20 text-gold px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                Category
+                <button
+                  onClick={() => setSelectedCategory("All")}
                   className="text-white hover:text-gold"
                 >
                   &times;

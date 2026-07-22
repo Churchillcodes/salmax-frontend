@@ -1,7 +1,9 @@
-import React, { useState } from "react";
-import { Mail, Phone, MapPin, Send, HelpCircle } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Helmet } from "react-helmet-async";
+import { Mail, Phone, MapPin, Send } from "lucide-react";
 import apiClient from "../../api/apiClient";
 import { toast } from "react-toastify";
+import { BUSINESS_INFO } from "../../config/siteConfig";
 
 export default function Contact() {
   const [name, setName] = useState("");
@@ -9,10 +11,41 @@ export default function Contact() {
   const [email, setEmail] = useState("");
   const [interest, setInterest] = useState("");
   const [message, setMessage] = useState("");
+  const [honeypot, setHoneypot] = useState(""); // bot trap — real users never see this
   const [submitting, setSubmitting] = useState(false);
+  const lastSubmitRef = useRef(0);
+
+  const resetForm = () => {
+    setName("");
+    setPhone("");
+    setEmail("");
+    setInterest("");
+    setMessage("");
+    setHoneypot("");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Silently "succeed" for bots without ever hitting the backend.
+    if (honeypot) {
+      setSubmitting(true);
+      setTimeout(() => {
+        toast.success(
+          "Your message has been sent successfully. We will get back to you shortly!",
+        );
+        resetForm();
+        setSubmitting(false);
+      }, 800);
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastSubmitRef.current < 15000) {
+      toast.info("Please wait a moment before sending another message.");
+      return;
+    }
+
     if (!name || !phone || !email || !message) {
       toast.warning("Please fill in all required fields.");
       return;
@@ -42,19 +75,13 @@ export default function Contact() {
     };
 
     try {
-      // Submit lead details to the backend leads collection
       await apiClient.post("/leads", leadData);
+      lastSubmitRef.current = Date.now();
 
       toast.success(
         "Your message has been sent successfully. We will get back to you shortly!",
       );
-
-      // Clear form on success
-      setName("");
-      setPhone("");
-      setEmail("");
-      setInterest("");
-      setMessage("");
+      resetForm();
     } catch (error) {
       console.error("Contact lead submission failed:", error);
       toast.error(
@@ -67,6 +94,16 @@ export default function Contact() {
 
   return (
     <div className="bg-dark-base min-h-screen text-warm-ivory py-16 font-sans">
+      <Helmet>
+        <title>Contact Us | Salmax Suppliers</title>
+        <meta
+          name="description"
+          content="Get in touch with Salmax Suppliers for questions about our collections, sizing, delivery, or wholesale boutique supply. Chat with us on WhatsApp or send a message."
+        />
+        <link rel="canonical" href="https://www.salmaxsuppliers.com/contact" />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
+
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
@@ -77,27 +114,25 @@ export default function Contact() {
             Connect With Salmax
           </h1>
           <p className="text-warm-ivory/60 text-sm font-light leading-relaxed">
-            Have questions about our collections, sizing, custom shipping, or
+            Have questions about our collections, sizing, delivery options, or
             wholesale boutique supply? Send us a message below.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
-          {/* Contact Details (Columns 1-5) */}
+          {/* Contact Details */}
           <div className="lg:col-span-5 space-y-8">
             <div className="space-y-4">
               <h2 className="font-serif text-2xl font-light text-white tracking-wide">
                 Boutique Information
               </h2>
               <p className="text-sm font-light text-warm-ivory/60 leading-relaxed">
-                Our customer relationship team is active between 8:00 AM and
-                6:00 PM (EAT). We aim to respond to all web forms and emails
-                within 24 hours.
+                {BUSINESS_INFO.hoursNote} We aim to respond to all web forms and
+                emails within 24 hours.
               </p>
             </div>
 
             <div className="space-y-6">
-              {/* Location */}
               <div className="flex gap-4">
                 <div className="w-10 h-10 rounded-lg bg-gold/5 border border-gold/20 flex items-center justify-center text-gold shrink-0">
                   <MapPin size={20} />
@@ -107,12 +142,11 @@ export default function Contact() {
                     Boutique Location
                   </h4>
                   <p className="text-xs text-warm-ivory/60 mt-1 font-light">
-                    Nairobi, Kenya
+                    {BUSINESS_INFO.location}
                   </p>
                 </div>
               </div>
 
-              {/* Phone */}
               <div className="flex gap-4">
                 <div className="w-10 h-10 rounded-lg bg-gold/5 border border-gold/20 flex items-center justify-center text-gold shrink-0">
                   <Phone size={18} />
@@ -122,15 +156,14 @@ export default function Contact() {
                     Speak With Us
                   </h4>
                   <a
-                    href="tel:+254700000000"
+                    href={BUSINESS_INFO.phoneHref}
                     className="text-xs text-warm-ivory/60 hover:text-gold transition duration-300 font-light block mt-1"
                   >
-                    +254 719 246 761
+                    {BUSINESS_INFO.phone}
                   </a>
                 </div>
               </div>
 
-              {/* Email */}
               <div className="flex gap-4">
                 <div className="w-10 h-10 rounded-lg bg-gold/5 border border-gold/20 flex items-center justify-center text-gold shrink-0">
                   <Mail size={18} />
@@ -140,16 +173,15 @@ export default function Contact() {
                     Write To Us
                   </h4>
                   <a
-                    href="mailto:info@salmaxsuppliers.com"
+                    href={`mailto:${BUSINESS_INFO.email}`}
                     className="text-xs text-warm-ivory/60 hover:text-gold transition duration-300 font-light block mt-1"
                   >
-                    info@salmaxsuppliers.com
+                    {BUSINESS_INFO.email}
                   </a>
                 </div>
               </div>
             </div>
 
-            {/* Direct WhatsApp Callout */}
             <div className="p-6 bg-dark-charcoal/40 border border-gold/10 rounded-xl space-y-3">
               <h3 className="font-serif text-sm font-medium text-gold tracking-wide">
                 Need Immediate Assistance?
@@ -159,7 +191,7 @@ export default function Contact() {
                 We are online to answer stock questions instantly.
               </p>
               <a
-                href={`https://wa.me/${import.meta.env.VITE_WHATSAPP_NUMBER || "254719246761"}`}
+                href={`https://wa.me/${BUSINESS_INFO.whatsappNumber}`}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-block text-xs uppercase tracking-widest bg-gold text-dark-base px-4 py-2.5 rounded font-semibold hover:bg-gold-light transition duration-300 mt-2"
@@ -169,13 +201,25 @@ export default function Contact() {
             </div>
           </div>
 
-          {/* Contact Form (Columns 6-12) */}
+          {/* Contact Form */}
           <div className="lg:col-span-7 bg-dark-charcoal border border-gold/10 rounded-xl p-8 shadow-xl">
             <h3 className="font-serif text-lg text-white font-medium mb-6 tracking-wide">
               Send Us A Message
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Honeypot field — hidden from real users, catches basic bots */}
+              <input
+                type="text"
+                name="companyWebsite"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                tabIndex="-1"
+                autoComplete="off"
+                aria-hidden="true"
+                className="absolute -left-[9999px] w-px h-px opacity-0"
+              />
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label

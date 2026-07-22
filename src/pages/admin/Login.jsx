@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { KeyRound, Mail, AlertCircle, Shield } from 'lucide-react';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { KeyRound, Mail, AlertCircle } from "lucide-react";
+import { toast } from "react-toastify";
 
 export default function Login() {
-  const [emailOrUsername, setEmailOrUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [emailOrUsername, setEmailOrUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
 
   const { login, user } = useAuth();
   const navigate = useNavigate();
@@ -17,26 +17,26 @@ export default function Login() {
   // If user is already logged in, redirect them immediately to dashboard
   useEffect(() => {
     if (user) {
-      navigate('/admin/dashboard', { replace: true });
+      navigate("/admin/dashboard", { replace: true });
     }
   }, [user, navigate]);
 
-  const from = location.state?.from?.pathname || '/admin/dashboard';
+  const from = location.state?.from?.pathname || "/admin/dashboard";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!emailOrUsername || !password) {
-      setErrorMsg('Please enter both credentials.');
+      setErrorMsg("Please enter both credentials.");
       return;
     }
 
-    setErrorMsg('');
+    setErrorMsg("");
     setSubmitting(true);
 
     const result = await login(emailOrUsername, password);
 
     if (result.success) {
-      toast.success('Welcome to Salmax Administrative Portal.');
+      toast.success("Welcome to Salmax Administrative Portal.");
       navigate(from, { replace: true });
     } else {
       setErrorMsg(result.message);
@@ -50,12 +50,14 @@ export default function Login() {
       <div className="w-full max-w-md bg-dark-charcoal border border-gold/15 rounded-2xl overflow-hidden shadow-2xl p-8 relative">
         {/* Top gold line */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gold" />
-        
+
         {/* Header */}
-        <div className="text-center mb-8 space-y-2">
-          <div className="w-12 h-12 rounded-full border border-gold/25 bg-gold/5 flex items-center justify-center text-gold mx-auto mb-3">
-            <Shield size={22} />
-          </div>
+        <div className="text-center mb-8 space-y-3">
+          <img
+            src="/brand/salmax-icon-color.png"
+            alt="Salmax Suppliers"
+            className="w-16 h-16 mx-auto object-contain drop-shadow-[0_0_18px_rgba(212,168,58,0.35)]"
+          />
           <h2 className="font-serif text-2xl font-semibold tracking-widest text-white uppercase">
             Salmax Suppliers
           </h2>
@@ -75,11 +77,17 @@ export default function Login() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="login-username" className="block text-xs uppercase tracking-widest text-warm-ivory/60 mb-2 font-medium">
+            <label
+              htmlFor="login-username"
+              className="block text-xs uppercase tracking-widest text-warm-ivory/60 mb-2 font-medium"
+            >
               Email or Username
             </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gold/50" size={16} />
+              <Mail
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gold/50"
+                size={16}
+              />
               <input
                 id="login-username"
                 type="text"
@@ -94,11 +102,17 @@ export default function Login() {
           </div>
 
           <div>
-            <label htmlFor="login-password" className="block text-xs uppercase tracking-widest text-warm-ivory/60 mb-2 font-medium">
+            <label
+              htmlFor="login-password"
+              className="block text-xs uppercase tracking-widest text-warm-ivory/60 mb-2 font-medium"
+            >
               Access Password
             </label>
             <div className="relative">
-              <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gold/50" size={16} />
+              <KeyRound
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gold/50"
+                size={16}
+              />
               <input
                 id="login-password"
                 type="password"
@@ -124,7 +138,7 @@ export default function Login() {
                   Authenticating...
                 </>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </button>
           </div>
