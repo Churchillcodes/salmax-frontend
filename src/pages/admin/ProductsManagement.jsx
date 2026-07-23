@@ -663,7 +663,7 @@ export default function ProductsManagement() {
 
       {/* Add / Edit Form Modal */}
       {showFormModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm md:pl-64">
           <div className="w-full max-w-2xl max-h-[90vh] bg-dark-charcoal border border-gold/25 rounded-xl shadow-2xl animate-fade-in text-warm-ivory flex flex-col overflow-hidden">
             <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base shrink-0">
               <h3 className="font-serif text-base text-gold font-medium tracking-wide">

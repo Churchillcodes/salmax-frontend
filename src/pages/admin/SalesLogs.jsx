@@ -236,7 +236,7 @@ export default function SalesLogs() {
 
       {/* Sale Detail Modal */}
       {viewingSale && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm md:pl-64">
           <div className="w-full max-w-md max-h-[90vh] bg-dark-charcoal border border-gold/25 rounded-xl overflow-hidden shadow-2xl animate-fade-in text-warm-ivory">
             <div className="flex justify-between items-center px-6 py-4 border-b border-gold/15 bg-dark-base">
               <div className="flex items-center gap-2">

@@ -122,12 +122,12 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 mb-20">
           {/* Product Gallery */}
           <div className="lg:col-span-7 space-y-4">
-            <div className="relative bg-dark-charcoal/50 border border-gold/10 rounded-xl overflow-hidden flex items-center justify-center h-[380px] sm:h-[460px] md:h-[540px]">
+            <div className="relative bg-dark-charcoal/50 border border-gold/10 rounded-xl overflow-hidden flex items-center justify-center h-95 sm:h-115 md:h-135">
               {images.length > 0 ? (
                 <img
                   src={images[activeIndex]}
                   alt={`${product.name} — image ${activeIndex + 1}`}
-                  className="w-full h-full object-contain p-4"
+                  className="w-full h-full object-contain p-4 rounded-4xl"
                 />
               ) : (
                 <span className="font-serif italic text-gold/30">
