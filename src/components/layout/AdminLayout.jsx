@@ -48,13 +48,13 @@ export default function AdminLayout() {
 
       {/* Sidebar - Desktop & Mobile Drawer */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-40 w-64 bg-dark-charcoal border-r border-gold/10 flex flex-col justify-between py-6 px-4 transition-transform duration-300 md:translate-x-0 ${
+        className={`fixed top-0 left-0 bottom-0 z-40 w-64 bg-dark-charcoal border-r border-gold/10 flex flex-col justify-between py-1 px-4 overflow-y-auto transition-transform duration-300 md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="space-y-8">
           {/* Logo */}
-          <div className="flex flex-col items-center border-b border-gold/10 pb-6">
+          <div className="flex flex-col items-center border-b border-gold/10 pb-1">
             <Link
               to="/"
               className="text-center group flex flex-col items-center"
@@ -62,7 +62,7 @@ export default function AdminLayout() {
               <img
                 src="/brand/salmax-primary-color.png"
                 alt="Salmax Suppliers"
-                className="h-20 w-auto object-contain group-hover:opacity-90 transition duration-300"
+                className="h-18 w-auto object-contain group-hover:opacity-90 transition duration-300"
               />
               <span className="text-[10px] uppercase tracking-[0.25em] text-white/50 mt-2">
                 ADMIN CONSOLE
@@ -71,7 +71,7 @@ export default function AdminLayout() {
           </div>
 
           {/* Navigation */}
-          <nav className="space-y-1">
+          <nav className="space-y-0.1">
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -80,7 +80,7 @@ export default function AdminLayout() {
                   to={item.path}
                   onClick={() => setIsOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg text-sm tracking-wider uppercase transition-all duration-300 ${
+                    `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm tracking-wider uppercase transition-all duration-300 ${
                       isActive
                         ? "bg-gold text-dark-base font-semibold shadow-md"
                         : "text-warm-ivory/70 hover:bg-gold/5 hover:text-gold"
@@ -96,7 +96,8 @@ export default function AdminLayout() {
         </div>
 
         {/* Footer actions */}
-        <div className="space-y-4 pt-6 border-t border-gold/10">
+        {/* Footer actions */}
+        <div className="space-y-4 pt-6 border-t border-gold/10 pb-6">
           {/* User info */}
           <div className="flex items-center gap-3 px-2">
             <div className="w-8 h-8 rounded-full border border-gold flex items-center justify-center text-gold bg-gold/5">
@@ -122,7 +123,7 @@ export default function AdminLayout() {
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm tracking-wider uppercase text-red-400 hover:bg-red-500/10 transition duration-300"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm tracking-wider uppercase bg-red-500 text-white"
           >
             <LogOut size={18} />
             <span>Sign Out</span>
@@ -133,7 +134,7 @@ export default function AdminLayout() {
       {/* Main Content Area */}
       <main className="flex-1 md:pl-64 min-h-screen flex flex-col min-w-0">
         {/* Header bar */}
-        <header className="bg-dark-charcoal/40 border-b border-gold/5 px-6 py-4 flex justify-between items-center hidden md:flex">
+        <header className="bg-dark-charcoal/40 border-b border-gold/5 px-6 py-4 flex justify-between items-center md:flex">
           <h2 className="font-serif text-xl font-medium tracking-wide text-gold">
             Control Panel
           </h2>
@@ -143,7 +144,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Dynamic Page Content */}
-        <div className="flex-1 p-6 pt-20 md:p-8 md:pt-8 overflow-y-auto min-w-0">
+        <div className="flex-1 p-6 pt-20 md:p-8 md:pt-8 min-w-0">
           <Outlet />
         </div>
       </main>
