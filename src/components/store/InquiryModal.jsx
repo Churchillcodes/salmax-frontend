@@ -1,8 +1,47 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Send, AlertCircle } from "lucide-react";
 import apiClient from "../../api/apiClient";
 import { toast } from "react-toastify";
 import { normalizeLead } from "../../utils/apiData";
+
+const CUSTOMER_STORAGE_KEY = "salmax_customer";
+
+const STORAGE_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+const saveCustomerDetails = (name, phone) => {
+  localStorage.setItem(
+    CUSTOMER_STORAGE_KEY,
+    JSON.stringify({
+      customerName: name,
+      customerPhone: phone,
+      expiresAt: Date.now() + STORAGE_DURATION,
+    }),
+  );
+};
+
+const getSavedCustomerDetails = () => {
+  const saved = localStorage.getItem(CUSTOMER_STORAGE_KEY);
+
+  if (!saved) return null;
+
+  try {
+    const parsed = JSON.parse(saved);
+
+    if (Date.now() > parsed.expiresAt) {
+      localStorage.removeItem(CUSTOMER_STORAGE_KEY);
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    localStorage.removeItem(CUSTOMER_STORAGE_KEY);
+    return null;
+  }
+};
+
+const clearSavedCustomerDetails = () => {
+  localStorage.removeItem(CUSTOMER_STORAGE_KEY);
+};
 
 export default function InquiryModal({ product, onClose }) {
   const [name, setName] = useState("");
@@ -10,6 +49,15 @@ export default function InquiryModal({ product, onClose }) {
   const [source, setSource] = useState("");
   const [otherSource, setOtherSource] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const saved = getSavedCustomerDetails();
+
+    if (saved) {
+      setName(saved.customerName || "");
+      setPhone(saved.customerPhone || "");
+    }
+  }, []);
 
   // Configuration for Salmax WhatsApp number
   const WHATSAPP_NUMBER =
@@ -38,8 +86,8 @@ export default function InquiryModal({ product, onClose }) {
       source === "Other" ? `Other: ${otherSource}` : source;
 
     const leadData = {
-      customerName: name,
-      customerPhone: phone,
+      customerName: name.trim(),
+      customerPhone: phone.trim(),
       source: selectedSource,
       product: product._id || product.id,
       productName: product.name,
@@ -47,6 +95,7 @@ export default function InquiryModal({ product, onClose }) {
 
     try {
       await apiClient.post("/leads", leadData);
+      saveCustomerDetails(name.trim(), phone.trim());
       const normalizedLead = normalizeLead({
         ...leadData,
         _id: product._id || product.id,
@@ -191,6 +240,20 @@ export default function InquiryModal({ product, onClose }) {
                 placeholder="e.g., +254 719 246 761"
                 className="w-full bg-dark-base border border-gold/20 rounded px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold premium-transition"
               />
+              <div className="mt-2 text-right">
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => {
+                    clearSavedCustomerDetails();
+                    setName("");
+                    setPhone("");
+                  }}
+                  className="text-xs text-gold hover:text-gold-light underline underline-offset-2 transition"
+                >
+                  Clear saved name & phone
+                </button>
+              </div>
             </div>
 
             <div>
