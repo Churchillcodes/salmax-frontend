@@ -11,7 +11,7 @@ export default function About() {
           name="description"
           content="Salmax Suppliers curates premium clothing, footwear, and accessories imported and hand-selected for quality — no custom orders, just the best pieces, ready to own."
         />
-        <link rel="canonical" href="https://www.salmaxsuppliers.com/about" />
+        <link rel="canonical" href="https://www.salmaxsuppliers.co.ke/about" />
         <meta name="robots" content="index, follow" />
       </Helmet>
 

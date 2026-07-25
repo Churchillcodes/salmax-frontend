@@ -78,7 +78,7 @@ export default function Home() {
           name="description"
           content="Salmax Suppliers is a Nairobi-based boutique supplier of premium, hand-selected clothing, accessories, and curated materials. Browse our catalogue and inquire directly on WhatsApp."
         />
-        <link rel="canonical" href="https://www.salmaxsuppliers.com/" />
+        <link rel="canonical" href="https://www.salmaxsuppliers.co.ke/" />
         <meta name="robots" content="index, follow" />
       </Helmet>
 

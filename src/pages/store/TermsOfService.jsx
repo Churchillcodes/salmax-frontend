@@ -13,7 +13,7 @@ export default function TermsOfService() {
         />
         <link
           rel="canonical"
-          href="https://www.salmaxsuppliers.com/terms-of-service"
+          href="https://www.salmaxsuppliers.co.ke/terms-of-service"
         />
         <meta name="robots" content="index, follow" />
       </Helmet>

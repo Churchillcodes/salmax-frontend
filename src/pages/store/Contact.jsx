@@ -100,7 +100,10 @@ export default function Contact() {
           name="description"
           content="Get in touch with Salmax Suppliers for questions about our collections, sizing, delivery, or wholesale boutique supply. Chat with us on WhatsApp or send a message."
         />
-        <link rel="canonical" href="https://www.salmaxsuppliers.com/contact" />
+        <link
+          rel="canonical"
+          href="https://www.salmaxsuppliers.co.ke/contact"
+        />
         <meta name="robots" content="index, follow" />
       </Helmet>
 

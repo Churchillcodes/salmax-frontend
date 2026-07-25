@@ -13,7 +13,7 @@ export default function PrivacyPolicy() {
         />
         <link
           rel="canonical"
-          href="https://www.salmaxsuppliers.com/privacy-policy"
+          href="https://www.salmaxsuppliers.co.ke/privacy-policy"
         />
         <meta name="robots" content="index, follow" />
       </Helmet>
