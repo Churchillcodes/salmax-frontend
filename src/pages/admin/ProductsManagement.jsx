@@ -21,7 +21,7 @@ import {
   normalizeProduct,
   SIZE_OPTIONS,
 } from "../../utils/apiData";
-import { confirmToast } from "../../utils/confirmToast";
+import { confirmToast } from "../../utils/ConfirmToast";
 
 export default function ProductsManagement() {
   const [products, setProducts] = useState([]);

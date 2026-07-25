@@ -19,7 +19,7 @@ import {
   normalizeCategory,
   SIZE_OPTIONS,
 } from "../../utils/apiData";
-import { confirmToast } from "../../utils/confirmToast";
+import { confirmToast } from "../../utils/ConfirmToast";
 
 export default function OrdersManagement() {
   const [orders, setOrders] = useState([]);
