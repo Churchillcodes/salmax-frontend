@@ -61,7 +61,7 @@ export default function InquiryModal({ product, onClose }) {
 
   // Configuration for Salmax WhatsApp number
   const WHATSAPP_NUMBER =
-    import.meta.env.VITE_WHATSAPP_NUMBER || "254719246761"; // Target business number
+    import.meta.env.VITE_WHATSAPP_NUMBER || "254728984242"; // Target business number
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -237,7 +237,7 @@ export default function InquiryModal({ product, onClose }) {
                 disabled={submitting}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g., +254 719 246 761"
+                placeholder="e.g., +254 728 984 242"
                 className="w-full bg-dark-base border border-gold/20 rounded px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold premium-transition"
               />
               <div className="mt-2 text-right">
