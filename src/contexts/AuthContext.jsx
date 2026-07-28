@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import apiClient, { setAccessToken } from "../api/apiClient";
+import { ROLES } from "../config/roles";
 
 const AuthContext = createContext(null);
 
@@ -20,7 +21,7 @@ export const AuthProvider = ({ children }) => {
 
         if (response.data?.accessToken) {
           setAccessToken(response.data.accessToken);
-          setUser(response.data.user || { role: "admin" });
+          setUser(response.data.user);
         } else {
           setAccessToken("");
           setUser(null);
@@ -62,8 +63,9 @@ export const AuthProvider = ({ children }) => {
 
       const response = await apiClient.post("/auth/login", payload);
       const { accessToken: token, user: userData } = response.data;
+
       setAccessToken(token);
-      setUser(userData || { role: "admin", username: emailOrUsername });
+      setUser(userData);
       return { success: true };
     } catch (error) {
       console.error("Login failed:", error);
@@ -111,7 +113,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
-        isAdmin: user?.role === "admin" || user?.isAdmin,
+        isAdmin: user?.roles?.includes(ROLES.Admin),
       }}
     >
       {children}
