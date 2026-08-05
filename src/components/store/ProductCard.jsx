@@ -56,7 +56,7 @@ export default function ProductCard({ product }) {
         </div>
 
         <div className="flex flex-1 flex-col p-5">
-          <p className="text-sm leading-6 text-warm-ivory/70">
+          <p className="min-h-20 line-clamp-3 text-sm leading-6 text-warm-ivory/70">
             {product.description ||
               "Tailored for the modern lifestyle with refined texture and craftsmanship."}
           </p>
