@@ -45,6 +45,8 @@ export const SIZE_OPTIONS = {
       "13-14Y",
       "14-15Y",
       "15-16Y",
+      "XS",
+      "S",
     ],
   },
   Bags: ["One Size"],
