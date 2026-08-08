@@ -29,7 +29,7 @@ export const SIZE_OPTIONS = {
     "46",
   ],
   Clothes: {
-    Adult: ["XS", "S", "M", "L", "XL", "XXL"],
+    Adult: ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "XXXXL"],
     Children: [
       "2-3Y",
       "3-4Y",
